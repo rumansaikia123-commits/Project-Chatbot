@@ -83,11 +83,13 @@ knowledge and be honest that you can't confirm very recent changes:
 ${CURATED_INFO}
 
 If the visitor is asking about nightlife, bars, clubs, lounges, rooftops, or
-live music, here are specific real venues relevant to that question — prefer
-these over vague generic suggestions, and feel free to recommend a few that
-best match what they're asking for (an area, a specific vibe, etc.). Each
-venue's [tags] show what it's known for. Do not mention these venues if the
-question isn't about nightlife:
+live music, here are the ONLY venues you may recommend — do not mention any
+other bar, club, lounge, or nightlife venue from your own general knowledge,
+even if you believe it's real, since we can only vouch for the accuracy of
+this specific, hand-verified list. Recommend a few that best match what
+they're asking for (an area, a specific vibe, etc.), using each venue's
+[tags] as a guide to what it's known for. If this list is empty, it means
+the question wasn't about nightlife — don't bring up venues unprompted:
 
 ${formatVenueList(relevantVenues)}`;
 }
