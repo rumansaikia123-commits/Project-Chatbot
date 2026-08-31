@@ -45,6 +45,8 @@
 - [x] Built a proper manual-update system instead: `systemPrompt.js` now has a structured, editable section (new openings, events, personal recommendations, last-updated date) that's treated as more trustworthy than the AI's general knowledge
 - [x] Verified the AI never leaks the internal "not yet updated" placeholder text to visitors, and honestly hedges when it doesn't have current info
 - [ ] You periodically fill in real updates as you learn about them (then push + Manual Deploy on Render to go live)
+- [x] Added real date-awareness: the server tells Gemini today's actual date (India time) on every request, since it has no built-in sense of "today" — verified it correctly identifies the current season and whether curated events are still upcoming or already past
+- [x] Added first real curated entry: Guns N' Roses live in Guwahati, Nov 17 2026 at Khanapara Veterinary Ground (cross-checked across multiple news sources)
 
 ## Phase B: Accounts + database (not started)
 - [ ] Real "Sign in with Google" login via Supabase (free tier, avoids us ever handling passwords ourselves)

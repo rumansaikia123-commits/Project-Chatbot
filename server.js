@@ -6,7 +6,7 @@ require('dotenv').config(); // loads secret values from .env into process.env
 
 const express = require('express');
 const { GoogleGenAI } = require('@google/genai');
-const systemPrompt = require('./systemPrompt');
+const buildSystemPrompt = require('./systemPrompt');
 
 const app = express();
 // Hosting platforms assign their own port via this environment variable;
@@ -41,6 +41,17 @@ app.post('/api/chat', async (req, res) => {
       parts: [{ text: message.content }],
     }));
 
+    // Computed fresh on every request so the chatbot always knows the real
+    // current date in Guwahati's own timezone, regardless of where the
+    // server itself happens to be physically hosted.
+    const todayInIndia = new Date().toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata',
+    });
+
     const response = await ai.models.generateContent({
       // gemini-3.6-flash does an invisible "thinking" step that was eating
       // almost the entire maxOutputTokens budget, cutting real replies short.
@@ -49,7 +60,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: systemPrompt,
+        systemInstruction: buildSystemPrompt(todayInIndia),
         maxOutputTokens: 2048,
       },
     });
