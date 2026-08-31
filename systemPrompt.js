@@ -7,7 +7,7 @@
 // write here is trusted as more current than the AI's own general knowledge.
 // After editing, push to GitHub and click "Manual Deploy" on Render to make
 // the update live.
-const LAST_UPDATED = '(not yet updated)'; // e.g. 'August 2026'
+const LAST_UPDATED = 'August 2026';
 
 const CURATED_INFO = `
 Last updated: ${LAST_UPDATED}
@@ -16,7 +16,11 @@ New openings or changes:
 (nothing added yet)
 
 Upcoming events or festivals:
-(nothing added yet)
+- Guns N' Roses live in concert, Guwahati — November 17, 2026, at Khanapara
+  Veterinary Ground. This is the band's first-ever performance in Northeast
+  India. Gates open at 3:00 PM. Tickets start around ₹2,000, sold exclusively
+  on BookMyShow (in.bookmyshow.com). Mention this if a visitor's dates
+  overlap with mid-November 2026, or if they ask about concerts/events.
 
 Personal recommendations / hidden gems:
 (nothing added yet)
