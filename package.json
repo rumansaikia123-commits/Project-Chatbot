@@ -1,0 +1,29 @@
+{
+  "name": "project-chatbot",
+  "version": "1.0.0",
+  "description": "A chatbot project built while learning to create AI applications from scratch.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rumansaikia123-commits/Project-Chatbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rumansaikia123-commits/Project-Chatbot/issues"
+  },
+  "homepage": "https://github.com/rumansaikia123-commits/Project-Chatbot#readme",
+  "dependencies": {
+    "@google/genai": "^2.19.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

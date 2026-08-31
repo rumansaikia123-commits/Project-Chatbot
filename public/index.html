@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explore Guwahati</title>
+
+  <!-- Google Fonts: an elegant serif for the title, a clean sans-serif for everything else -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Fixed full-page photo background, sits behind everything -->
+  <div class="backdrop"></div>
+
+  <div class="page">
+    <header class="header">
+      <h1>Explore Guwahati</h1>
+      <p>Your friendly local guide to the city</p>
+    </header>
+
+    <main class="chat-card">
+      <div id="messages" class="messages">
+        <div class="message bot">
+          Namaskar, and welcome. I'm your personal guide to Guwahati — ask me
+          about the city's finest sights, food, or say something like
+          "plan me a 2-day trip" to begin.
+        </div>
+      </div>
+
+      <form id="chat-form" class="chat-form">
+        <input
+          id="chat-input"
+          type="text"
+          placeholder="Ask your guide about Guwahati..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
