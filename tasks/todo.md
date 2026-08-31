@@ -33,6 +33,13 @@
 - [x] Fixed: welcome message showed a broken line mid-sentence (caused by `white-space: pre-wrap` preserving the HTML file's own indentation)
 - [x] Fixed: the bot's `**bold**` text and lists showed raw asterisks instead of real formatting — now safely rendered (HTML-escaped first, so this can't be used to inject real code)
 
+## Real-world bug fix: long replies were cutting off mid-sentence
+- [x] Root cause found via live API test: `gemini-3.6-flash` does an invisible "thinking" step that was eating almost the entire 800-token reply budget, and its free tier only allows 20 requests/day — far too limited for real use
+- [x] Switched to `gemini-3.5-flash-lite` (no invisible thinking step, much more generous free daily quota) and raised the reply budget to 2048 tokens
+- [x] Verified with a live 5-day-itinerary request: full, natural, uncut reply (confirmed via `finishReason: STOP`)
+- [x] Also fixed while testing: the bot's `### headings` and `* bullet` markdown showed as raw symbols on longer, more structured replies — now rendered as real formatting (still HTML-escaped first, so this can't be used to inject code)
+- [x] Confirmed on-topic/off-topic behavior unaffected by the model switch
+
 ## Later (not in v1)
 - [ ] You provide curated Guwahati content (places, tips) — I fold it into the system prompt
 - [ ] Deploy to free hosting (e.g. Render) so you get a real shareable link

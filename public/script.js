@@ -12,15 +12,22 @@ const inputEl = document.getElementById('chat-input');
 const conversation = [];
 
 // Escapes any HTML in the AI's reply first (so it can never inject real tags),
-// then turns the now-safe text's **bold** markers into actual bold text.
-// Because escaping always runs first, this cannot be used to sneak in HTML.
+// then turns the now-safe text's basic markdown (headings, bullet lists, bold)
+// into real formatting. Because escaping always runs first, none of this can
+// be used to sneak in HTML — only the specific tags added below ever appear.
 function formatBotReply(text) {
   const escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return escaped
+    // "### Heading" -> bold line (a full heading style would look too heavy inside a small chat bubble)
+    .replace(/^#{1,6}\s+(.+)$/gm, '<strong>$1</strong>')
+    // "* item" or "- item" at the start of a line -> a real bullet character
+    .replace(/^[*-]\s+/gm, '• ')
+    // "**bold**" -> actual bold text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
 function addMessageToPage(text, sender) {

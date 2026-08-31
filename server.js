@@ -42,11 +42,15 @@ app.post('/api/chat', async (req, res) => {
     }));
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      // gemini-3.6-flash does an invisible "thinking" step that was eating
+      // almost the entire maxOutputTokens budget, cutting real replies short.
+      // flash-lite skips that step, and its free tier allows far more
+      // requests per day, which matters for an app real people will use.
+      model: 'gemini-3.5-flash-lite',
       contents,
       config: {
         systemInstruction: systemPrompt,
-        maxOutputTokens: 800,
+        maxOutputTokens: 2048,
       },
     });
 
