@@ -26,10 +26,18 @@ Personal recommendations / hidden gems:
 (nothing added yet)
 `;
 
-// Builds the full system prompt, given today's real date (passed in from
-// server.js, computed fresh for every request — Gemini has no built-in sense
-// of "today" on its own, so we have to tell it explicitly each time).
-function buildSystemPrompt(todayString) {
+// Turns a list of matched venues (from venues.js) into a text block for the prompt.
+function formatVenueList(venues) {
+  if (venues.length === 0) return '(none relevant to this question)';
+  return venues
+    .map((v) => `- ${v.name} (${v.area}) [${v.tags.join(', ')}]${v.lowConfidence ? ' — lower confidence, mention reviews are mixed' : ''}: ${v.notes}`)
+    .join('\n');
+}
+
+// Builds the full system prompt, given today's real date and any nightlife
+// venues relevant to the visitor's latest message (both passed in from
+// server.js, computed fresh for every request).
+function buildSystemPrompt(todayString, relevantVenues = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -72,7 +80,16 @@ that simply means nothing has been added for that section yet; don't
 mention the placeholder text itself, just fall back to your general
 knowledge and be honest that you can't confirm very recent changes:
 
-${CURATED_INFO}`;
+${CURATED_INFO}
+
+If the visitor is asking about nightlife, bars, clubs, lounges, rooftops, or
+live music, here are specific real venues relevant to that question — prefer
+these over vague generic suggestions, and feel free to recommend a few that
+best match what they're asking for (an area, a specific vibe, etc.). Each
+venue's [tags] show what it's known for. Do not mention these venues if the
+question isn't about nightlife:
+
+${formatVenueList(relevantVenues)}`;
 }
 
 module.exports = buildSystemPrompt;
