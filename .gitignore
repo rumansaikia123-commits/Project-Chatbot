@@ -1,0 +1,9 @@
+# Secret keys - never upload this file
+.env
+
+# Downloaded code libraries (recreated automatically, no need to track)
+node_modules/
+
+# Common editor/OS junk files
+.DS_Store
+Thumbs.db
