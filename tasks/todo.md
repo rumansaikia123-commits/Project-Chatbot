@@ -17,8 +17,8 @@
 - [x] Fixed along the way: outdated model names (both `claude-sonnet-4-5` and later `gemini-2.5-flash`) corrected to the current live model
 
 ## Phase 4: Save progress
-- [ ] Commit the working chatbot to git
-- [ ] Push to the `Project-Chatbot` GitHub repo (will confirm with you first)
+- [x] Commit the working chatbot to git
+- [x] Push to the `Project-Chatbot` GitHub repo
 
 ## Pre-release audit fixes (all verified working via live tests)
 - [x] Server now uses `process.env.PORT` so it works on real hosting (was hardcoded to 3000)
@@ -27,6 +27,11 @@
 - [x] Added a response length limit (`maxOutputTokens`) to keep replies concise and cost predictable
 - [x] Pinned required Node.js version (`>=20.0.0`) in `package.json` for reliable hosting
 - [x] Fixed `package.json`'s `"main"` field to point at the real entry file (`server.js`)
+
+## Mobile testing (real headless-browser test, not just code review)
+- [x] Confirmed no horizontal overflow, header fits on one line, touch targets sized well, and a live message sends/receives correctly at a 375x667 (iPhone SE) screen
+- [x] Fixed: welcome message showed a broken line mid-sentence (caused by `white-space: pre-wrap` preserving the HTML file's own indentation)
+- [x] Fixed: the bot's `**bold**` text and lists showed raw asterisks instead of real formatting — now safely rendered (HTML-escaped first, so this can't be used to inject real code)
 
 ## Later (not in v1)
 - [ ] You provide curated Guwahati content (places, tips) — I fold it into the system prompt

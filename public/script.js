@@ -11,10 +11,28 @@ const inputEl = document.getElementById('chat-input');
 // This is what lets the chatbot "remember" earlier messages, e.g. "what about day 2".
 const conversation = [];
 
+// Escapes any HTML in the AI's reply first (so it can never inject real tags),
+// then turns the now-safe text's **bold** markers into actual bold text.
+// Because escaping always runs first, this cannot be used to sneak in HTML.
+function formatBotReply(text) {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 function addMessageToPage(text, sender) {
   const bubble = document.createElement('div');
   bubble.className = `message ${sender}`;
-  bubble.textContent = text;
+
+  if (sender === 'bot') {
+    bubble.innerHTML = formatBotReply(text);
+  } else {
+    bubble.textContent = text;
+  }
+
   messagesEl.appendChild(bubble);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return bubble;
