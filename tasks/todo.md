@@ -40,7 +40,18 @@
 - [x] Also fixed while testing: the bot's `### headings` and `* bullet` markdown showed as raw symbols on longer, more structured replies — now rendered as real formatting (still HTML-escaped first, so this can't be used to inject code)
 - [x] Confirmed on-topic/off-topic behavior unaffected by the model switch
 
+## Phase A: "Live updates" (v2 planning)
+- [x] Tried Google Search grounding (fully automatic web search) — found it requires a linked Google Cloud billing card even to use its free quota, which conflicts with staying card-free, so we're not using it
+- [x] Built a proper manual-update system instead: `systemPrompt.js` now has a structured, editable section (new openings, events, personal recommendations, last-updated date) that's treated as more trustworthy than the AI's general knowledge
+- [x] Verified the AI never leaks the internal "not yet updated" placeholder text to visitors, and honestly hedges when it doesn't have current info
+- [ ] You periodically fill in real updates as you learn about them (then push + Manual Deploy on Render to go live)
+
+## Phase B: Accounts + database (not started)
+- [ ] Real "Sign in with Google" login via Supabase (free tier, avoids us ever handling passwords ourselves)
+- [ ] Per-person saved chat history
+
+## Housekeeping
+- [ ] Fix Render auto-deploy so future pushes go live without a manual click
+
 ## Later (not in v1)
-- [ ] You provide curated Guwahati content (places, tips) — I fold it into the system prompt
-- [ ] Deploy to free hosting (e.g. Render) so you get a real shareable link
 - [ ] Optional future features: photos, multiple languages, password protection
