@@ -75,7 +75,7 @@ function getRelevantVenues(message) {
   const isClub = /\bclub(bing)?|nightclub/.test(text);
   const isRooftop = /roof\s?top/.test(text);
   const isLiveMusic = /live\s?(music|band)|karaoke|gig/.test(text);
-  const isBarOrLounge = /\bbar\b|\blounge\b|\bpub\b|drink|nightlife|hang\s?out|party|chill/.test(text);
+  const isBarOrLounge = /\bbar\b|\blounge\b|\bpub\b|drink|nightlife|hang\s?out|party|chill|alcohol/.test(text);
 
   const wantsTags = new Set();
   if (isClub) wantsTags.add('clubbing');
