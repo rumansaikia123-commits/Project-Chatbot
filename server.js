@@ -8,6 +8,7 @@ const express = require('express');
 const { GoogleGenAI } = require('@google/genai');
 const buildSystemPrompt = require('./systemPrompt');
 const { getRelevantVenues } = require('./venues');
+const { getRelevantRestaurants } = require('./restaurants');
 
 const app = express();
 // Hosting platforms assign their own port via this environment variable;
@@ -68,6 +69,7 @@ app.post('/api/chat', async (req, res) => {
     // instructions, instead of sending the whole venue list every time.
     const latestUserMessage = messages[messages.length - 1].content;
     const relevantVenues = getRelevantVenues(latestUserMessage);
+    const relevantRestaurants = getRelevantRestaurants(latestUserMessage);
 
     const response = await ai.models.generateContent({
       // gemini-3.6-flash does an invisible "thinking" step that was eating
@@ -77,7 +79,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants),
         maxOutputTokens: 2048,
       },
     });

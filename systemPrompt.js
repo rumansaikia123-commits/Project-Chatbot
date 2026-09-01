@@ -34,10 +34,23 @@ function formatVenueList(venues) {
     .join('\n');
 }
 
-// Builds the full system prompt, given today's real date and any nightlife
-// venues relevant to the visitor's latest message (both passed in from
-// server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = []) {
+// Turns a list of matched restaurants (from restaurants.js) into a text block for the prompt.
+function formatRestaurantList(restaurants) {
+  if (restaurants.length === 0) return '(none relevant to this question)';
+  return restaurants
+    .map((r) => {
+      const cost = r.costForTwo != null ? `~₹${r.costForTwo} for two` : 'price not listed';
+      const flag = r.lowConfidence ? ' — lower confidence, mention reviews are mixed' : '';
+      const highlight = r.highlight ? `: ${r.highlight}` : '';
+      return `- ${r.name} (${r.area}) [${r.cuisines.join(', ')}] ${r.rating}★, ${cost}${flag}${highlight}`;
+    })
+    .join('\n');
+}
+
+// Builds the full system prompt, given today's real date, any nightlife
+// venues, and any restaurants relevant to the visitor's latest message
+// (all passed in from server.js, computed fresh for every request).
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -99,7 +112,24 @@ they're asking for (an area, a specific vibe, etc.), using each venue's
 [tags] as a guide to what it's known for. If this list is empty, it means
 the question wasn't about nightlife — don't bring up venues unprompted:
 
-${formatVenueList(relevantVenues)}`;
+${formatVenueList(relevantVenues)}
+
+If a visitor's food plans are vague — e.g. "where should I eat," "any good
+food nearby" — with no cuisine, budget, or area mentioned, don't guess.
+Ask a brief, friendly clarifying question (cuisine preference, rough
+budget, or which part of town) instead. Only bring up the specific
+restaurants below once they've clarified.
+
+If the visitor is asking about restaurants, food, or dining, here are the
+ONLY restaurants you may recommend — do not mention any other restaurant
+or eatery from your own general knowledge, even if you believe it's real,
+since we can only vouch for the accuracy of this specific, hand-verified
+list. Use each restaurant's cuisine, rating, and approximate cost for two
+to match what they're asking for. If this list is empty, it means either
+the question wasn't about food, or it was too vague to narrow down — don't
+bring up restaurants unprompted:
+
+${formatRestaurantList(relevantRestaurants)}`;
 }
 
 module.exports = buildSystemPrompt;

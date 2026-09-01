@@ -76,8 +76,45 @@
       inside "gigabyte"/"chilli" while still matching "gigs", "chilling",
       etc. Verified with 6 test phrases (real nightlife questions, "gigabyte
       internet speed", "chilli souvenir") — all matched as expected.
-- [ ] Commit and push (with confirmation before the push), then manually
-      deploy on Render.
+- [x] Commit and push, then manually deploy on Render.
+
+## Food & restaurant recommendation directory
+- [x] Compiled and deduplicated 30 real Guwahati restaurants from Zomato
+      CSV/PDF sources; resolved conflicting rating/cost data by preferring
+      the cleaned PDF source; reconciled Terra Mayaa, The Maroon Room, and
+      Abacus Brewing Co & Kitchen (all three already exist in venues.js as
+      nightlife venues) to use their existing venues.js rating/area, so
+      they show the same numbers regardless of which feature answers
+- [x] Built `restaurants.js` — structured data with area, cuisines,
+      costForTwo (INR, or null when no source had a cost), rating, and
+      optional highlight/address per restaurant
+- [x] Built keyword-based filtering (`getRelevantRestaurants`) — detects
+      food-related questions, extracts cuisine/budget/area signals from
+      free text, combines matched filters with AND logic (unlike
+      nightlife's OR-of-tags, since a food request usually wants the
+      intersection of what was actually asked for); vague food questions
+      return no data so the bot asks a clarifying question instead of
+      guessing
+- [x] Extended `systemPrompt.js` with `formatRestaurantList()` and a
+      matching guardrail — Gemini may only recommend restaurants from this
+      hand-verified list, mirroring the nightlife feature's "don't
+      hallucinate others" instruction
+- [x] Wired into `server.js`: `getRelevantRestaurants(latestUserMessage)`
+      computed alongside `getRelevantVenues`, both passed into
+      `buildSystemPrompt`
+- [x] Verified with direct `getRelevantRestaurants()` calls: cuisine-only,
+      budget-only, location-only, and combined queries all return correctly
+      filtered restaurants; non-food and food-adjacent-but-unrelated phrases
+      ("budget hotel", "cheap flight") correctly return none
+- [x] Verified live: "Chinese food near Six Mile" correctly recommends
+      Confucius with real rating/cost; a vague "where should I eat tonight?"
+      gets a clarifying question, not a guess; a two-turn conversation
+      (vague → clarified with cuisine/budget/area) correctly narrows down;
+      a query with no verified match ("cheap North Indian near Khanapara")
+      gets an honest "no verified match" reply instead of a hallucinated
+      one; existing nightlife behavior (e.g. "best rooftop bar") confirmed
+      unaffected; Terra Mayaa shows the same 4.1★ rating whether asked
+      about as food or nightlife
 
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
