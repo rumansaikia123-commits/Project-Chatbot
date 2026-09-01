@@ -64,12 +64,20 @@ app.post('/api/chat', async (req, res) => {
       timeZone: 'Asia/Kolkata',
     });
 
-    // Only look at the visitor's latest message for nightlife keywords —
-    // this decides which real venues (if any) get added to this request's
-    // instructions, instead of sending the whole venue list every time.
-    const latestUserMessage = messages[messages.length - 1].content;
-    const relevantVenues = getRelevantVenues(latestUserMessage);
-    const relevantRestaurants = getRelevantRestaurants(latestUserMessage);
+    // Look at everything the visitor has said so far (not just their latest
+    // message) for nightlife/food keywords. A single message is too narrow:
+    // once someone asks "where's good coffee" and the bot asks a follow-up
+    // question, their next reply is often something short like "any area" or
+    // "give me a list" — which mentions no food words at all. Checking only
+    // that latest message would wrongly conclude the topic isn't food-related
+    // anymore and drop the real data, even though the conversation clearly
+    // hasn't moved on.
+    const allVisitorText = messages
+      .filter((message) => message.role !== 'assistant')
+      .map((message) => message.content)
+      .join(' ');
+    const relevantVenues = getRelevantVenues(allVisitorText);
+    const relevantRestaurants = getRelevantRestaurants(allVisitorText);
 
     const response = await ai.models.generateContent({
       // gemini-3.6-flash does an invisible "thinking" step that was eating

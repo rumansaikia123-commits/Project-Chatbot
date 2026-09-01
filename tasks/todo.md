@@ -156,6 +156,36 @@
       choice, not something this change introduced or something fixable
       in our own code
 
+## Bug fix: real conversation losing food/nightlife data mid-chat (2026-09-01)
+- [x] Root cause found from a real user transcript: `server.js` only ever
+      looked at the visitor's single latest message to decide which
+      venues/restaurants to inject that turn. A natural short follow-up
+      like "any location," "both," or "give me a list" doesn't repeat any
+      food/nightlife keyword, so on those turns the real data was silently
+      dropped — and the bot then (correctly, given what it was told) said
+      it had no verified list to share, even though the topic (e.g.
+      "coffee") was clearly still the same conversation
+- [x] This was NOT the `gemini-3.5-flash-lite` randomness noted above —
+      confirmed by directly calling `getRelevantRestaurants()` on each of
+      the real transcript's messages: the "coffee" and "cafes in guwahati"
+      messages matched 27 cafes each, while "any location"/"both"/"give me
+      a list of places" matched zero every time, deterministically
+- [x] Fixed in `server.js`: instead of only the latest message, keyword
+      matching now runs against all of the visitor's messages so far in
+      the conversation joined together, so a topic established earlier
+      stays available through short follow-ups. No changes needed in
+      `venues.js`/`restaurants.js` — both already take a plain string
+- [x] Verified: replayed the exact real transcript ("where do I get best
+      coffee" → "any location" → "both" → "Give me list of places")
+      against the live local server — every turn now gets real cafe data
+      and the bot no longer claims it has nothing verified to share;
+      confirmed the same fix also keeps nightlife follow-ups (e.g.
+      "best rooftop bar" → "something cheaper") working; confirmed that
+      switching to a genuinely unrelated topic (Kamakhya Temple) after a
+      cafe question still gets a clean, on-topic answer with no stray cafe
+      mentions — stale context doesn't force bad behavior, it just no
+      longer disappears when it's still needed
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
