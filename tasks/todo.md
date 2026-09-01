@@ -116,6 +116,46 @@
       unaffected; Terra Mayaa shows the same 4.1★ rating whether asked
       about as food or nightlife
 
+## Cafe data added to the food directory
+- [x] Compiled 27 unique cafes from a dedicated "best cafes" PDF (28 rows,
+      1 internal duplicate removed); skipped 2 names already in
+      `restaurants.js` (Lush - The Café, 11th Avenue Cafe Bistro) rather
+      than re-litigating their already-resolved data; converted the
+      source's cost ranges (e.g. "1000-1500") to a single midpoint number
+      to fit the existing `costForTwo` field
+- [x] Added Leaf Deck Café Bar to both `restaurants.js` (cafe) and
+      `venues.js` (nightlife, lounge-bar tag) since it's genuinely both;
+      kept Guwahati Heights cafe-only since it doesn't serve alcohol
+      despite having live music/karaoke
+- [x] Extended `CUISINE_KEYWORDS` (Irish, Mediterranean, Bakery) and
+      `AREA_KEYWORDS` (Machkhowa, Chandmari, Rajgarh, Fatasil Hills,
+      Kharghuli Hills, Borbari, Latasil) to cover this data's new terms
+- [x] Fixed a real bug caught during testing: the merged
+      `dighalipukhuri|uzan bazar` area-keyword row mapped both to the
+      single canonical name `'Dighalipukhuri'`, so substring matching
+      silently failed for any restaurant whose area said "Uzan Bazar"
+      without literally containing the word "Dighalipukhuri" (true for
+      most of the new cafes) — split into two independent rows
+- [x] Fixed a second real bug caught during testing: `\bcaf[eé]\b` never
+      matched the plural "cafes" (the trailing `\b` fails right after
+      "cafe" since "s" is still a word character) — this silently broke
+      the very first natural test query ("cafes in Uzan Bazar"). Changed
+      to `\bcaf[eé]s?\b` in both `FOOD_TRIGGER` and the cuisine keyword
+      table; fix verified against both singular and plural phrasing
+- [x] Verified with direct `getRelevantRestaurants()`/`getRelevantVenues()`
+      calls and live server tests: cafe+area, cafe+budget+area, a new
+      cuisine (Irish), and Leaf Deck Café Bar surfacing correctly from
+      both the food angle and the nightlife angle; confirmed Lush and
+      11th Avenue Cafe Bistro still show their original, untouched numbers
+- [x] Observed (not a bug, not fixed): the same exact system prompt
+      occasionally gets an overly-cautious "I don't have verified data"
+      reply from Gemini even when the correct data is present — confirmed
+      via repeated direct API calls with an identical prompt (some calls
+      correct, some not). This is `gemini-3.5-flash-lite`'s own response
+      randomness, a pre-existing characteristic of this free-tier model
+      choice, not something this change introduced or something fixable
+      in our own code
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

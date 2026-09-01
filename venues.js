@@ -64,6 +64,9 @@ const venues = [
     notes: 'Lower-confidence pick — mixed/mediocre reviews, budget-friendly.', lowConfidence: true },
   { name: 'Beer Cafe', area: 'Times Square Mall, Sreenagar', tags: ['lounge-bar', 'live-music'],
     notes: 'Wide beer selection, live music, award-winning (Guwahati Food Awards 2024). 4.8★.' },
+  // Also listed in restaurants.js as a cafe — it's a cafe by day, bar by night.
+  { name: 'Leaf Deck Café Bar', area: 'Chandmari', tags: ['lounge-bar'],
+    notes: 'Cafe cum bar with handcrafted cocktails and all-day happy hours. 4.8★.' },
 ];
 
 // Looks at what the visitor actually asked and returns only the matching venues.

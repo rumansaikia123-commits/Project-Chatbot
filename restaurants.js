@@ -164,6 +164,86 @@ const restaurants = [
     costForTwo: 1200, rating: 4.1,
     highlight: 'Highly rated menu and ambience.',
     address: '45/46, RG Baruah Road, Zoo Tiniali, Guwahati, Assam' },
+
+  // ----- Cafes (from a dedicated "best cafes" source; costs given as ranges
+  // in that source have been converted to their midpoint) -----
+  { name: "Daphne's Cafe", area: 'Machkhowa', cuisines: ['Cafe', 'Italian'],
+    costForTwo: 1250, rating: 4.6,
+    highlight: '3-story layout, Brahmaputra River sunset views, wood-fired pizza.' },
+  // Also a venues.js nightlife pick (lounge-bar) — it's a cafe by day, bar by night.
+  { name: 'Leaf Deck Café Bar', area: 'Chandmari', cuisines: ['Cafe', 'Bar'],
+    costForTwo: 800, rating: 4.8,
+    highlight: 'Cafe cum bar, handcrafted cocktails, all-day happy hours.' },
+  { name: 'Balcony Cafe', area: 'Dighalipukhuri East', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.8,
+    highlight: "Assam's first pink-themed cafe, very pocket-friendly." },
+  { name: 'The October Cafe', area: 'Uzan Bazar', cuisines: ['Cafe'],
+    costForTwo: 100, rating: 4.6,
+    highlight: 'Cozy workspace vibe, highly affordable specialty coffee.' },
+  { name: 'Cafe Aera', area: 'Bormotoria (GS Road)', cuisines: ['Cafe', 'Italian'],
+    costForTwo: 300, rating: 4.5,
+    highlight: 'Wood-fired pizza, hearty pastas, and relaxed workspace ambiance.' },
+  // No alcohol served — a cafe with live entertainment, not a nightlife venue.
+  { name: 'Guwahati Heights', area: 'Uzan Bazar', cuisines: ['Cafe'],
+    costForTwo: 400, rating: 4.6,
+    highlight: 'Live music, karaoke nights, and open mic events (no alcohol served).' },
+  { name: 'Pause.', area: 'Rajgarh', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.9,
+    highlight: 'Chef-driven comfort food, slow specialty coffee brewing.' },
+  { name: 'Irish Republica Cafe', area: 'Lachit Nagar', cuisines: ['Cafe', 'Irish'],
+    costForTwo: 1000, rating: 4.8,
+    highlight: 'Traditional Irish warmth combined with modern quick bites.' },
+  { name: 'Uptown Escape Cafe', area: 'GS Road (ABC)', cuisines: ['Cafe'],
+    costForTwo: 1000, rating: 4.3,
+    highlight: 'Great breakfast menu, fresh smoothies, and free Wi-Fi.' },
+  { name: 'Brew & Chill', area: 'Fatasil Hills', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.8,
+    highlight: 'Relaxed weekend hangout spot with scenic view vibes.' },
+  { name: 'Cafe Rivea', area: 'Uzan Bazar', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.4,
+    highlight: 'Excellent morning breakfast and riverside cafe vibes.' },
+  { name: 'Bagan: Poolside Café (Greenwood)', area: 'Khanapara', cuisines: ['Cafe', 'Continental'],
+    costForTwo: 1150, rating: 4.4,
+    highlight: 'Luxury resort poolside dining, gourmet burgers & pizzas.' },
+  { name: 'Dockyard by Cafe Bellevue', area: 'Kharghuli Hills', cuisines: ['Cafe'],
+    costForTwo: 600, rating: 4.2,
+    highlight: 'Panoramic hilltop views overlooking the Brahmaputra River.' },
+  { name: 'Revolver Cafe', area: 'Uzan Bazar', cuisines: ['Cafe'],
+    costForTwo: 700, rating: 4.5,
+    highlight: 'Specialty coffee & matcha bar, artisanal burgers.' },
+  { name: 'The HideOut Café', area: 'Borbari (VIP Road)', cuisines: ['Cafe', 'Tibetan'],
+    costForTwo: 300, rating: 4.1,
+    highlight: 'Garden-themed cafe, fresh multi-cuisine breakfast and momos.' },
+  { name: 'Cafe Maya', area: 'Christian Basti', cuisines: ['Cafe', 'Chinese', 'Asian', 'Mughlai'],
+    costForTwo: 600, rating: 4.9,
+    highlight: 'Casual dining mix of Chinese, Asian, and Mughlai finger foods.' },
+  { name: 'The Atrangi House', area: 'Dighalipukhuri', cuisines: ['Cafe', 'Bakery', 'Continental'],
+    costForTwo: 300, rating: 4.7,
+    highlight: 'Fusion bakery, continental food, and quirky aesthetic design.' },
+  { name: 'CAFE UZAN', area: 'Uzan Bazar (Latasil)', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.5,
+    highlight: 'Cozy local cafe near Latasil, popular for casual coffee and affordable bites.' },
+  { name: 'BiteBae Cafe', area: 'Uzan Bazar (Latasil)', cuisines: ['Cafe'],
+    costForTwo: 150, rating: 4.7,
+    highlight: 'Highly rated budget-friendly cafe with a casual hangout atmosphere.' },
+  { name: 'Cafe Karma', area: 'Uzan Bazar (Dighalipukhuri East)', cuisines: ['Cafe'],
+    costForTwo: 400, rating: 4.3,
+    highlight: 'Popular casual cafe near Dighalipukhuri, suitable for relaxed meals and evening hangouts.' },
+  { name: 'Velle Vista by Cafe Bellevue', area: 'Uzan Bazar (Umananda Ghat)', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.2,
+    highlight: 'Riverside cafe above RiverRun with views toward the Brahmaputra and Umananda Ghat.' },
+  { name: 'The Corner Café', area: 'Uzan Bazar (Ambari)', cuisines: ['Cafe'],
+    costForTwo: 300, rating: 4.2,
+    highlight: 'Long-running neighbourhood cafe offering multi-cuisine food and casual seating.' },
+  { name: 'The Bean Journal Boutique Café', area: 'Uzan Bazar (Latasil)', cuisines: ['Cafe', 'Asian', 'Mediterranean', 'Italian'],
+    costForTwo: 400, rating: 4.2,
+    highlight: 'Boutique cafe known for coffee, desserts and a broad Asian, Mediterranean and Italian menu.' },
+  { name: 'Craftery - Boutique Cafe', area: 'Uzan Bazar', cuisines: ['Cafe', 'Italian', 'Continental'],
+    costForTwo: 700, rating: 4.4,
+    highlight: 'Boutique-style cafe serving coffee, Italian and continental food in an aesthetic setting.' },
+  { name: 'Café Choco Craze', area: 'Uzan Bazar (Latasil)', cuisines: ['Cafe', 'Bakery'],
+    costForTwo: 300, rating: 4.3,
+    highlight: 'Affordable cafe focused on chocolate, beverages, snacks and casual dining.' },
 ];
 
 // Cuisine keyword lookup — one row per canonical cuisine that actually
@@ -195,8 +275,11 @@ const CUISINE_KEYWORDS = [
   { pattern: /pure\s?veg|vegetarian/, cuisine: 'Pure Veg' },
   { pattern: /multi-?cuisine/, cuisine: 'Multi-Cuisine' },
   { pattern: /\bthai\b/, cuisine: 'Thai' },
-  { pattern: /\bcaf[eé]\b|\bcoffee\b/, cuisine: 'Cafe' },
+  { pattern: /\bcaf[eé]s?\b|\bcoffee\b/, cuisine: 'Cafe' },
   { pattern: /\bjapanese\b|\bsushi\b/, cuisine: 'Japanese' },
+  { pattern: /\birish\b/, cuisine: 'Irish' },
+  { pattern: /\bmediterranean\b/, cuisine: 'Mediterranean' },
+  { pattern: /\bbakery\b|\bdessert/, cuisine: 'Bakery' },
 ];
 
 // Area keyword lookup — one row per locality actually used above, with
@@ -209,7 +292,14 @@ const AREA_KEYWORDS = [
   { pattern: /\bambari\b/, area: 'Ambari' },
   { pattern: /\bbeltola\b/, area: 'Beltola' },
   { pattern: /christian\s?basti/, area: 'Christian Basti' },
-  { pattern: /dighalipukhuri|uzan\s?bazar/, area: 'Dighalipukhuri' },
+  // Split into two rows (was one merged "Dighalipukhuri|Uzan Bazar" row that
+  // mapped both to the single canonical name 'Dighalipukhuri' — but the
+  // substring-match filter below then failed for any restaurant whose area
+  // says "Uzan Bazar" without literally containing the word "Dighalipukhuri",
+  // which is true for most of the cafes added later).
+  { pattern: /dighalipukhuri/, area: 'Dighalipukhuri' },
+  { pattern: /uzan\s?bazar/, area: 'Uzan Bazar' },
+  { pattern: /latasil/, area: 'Latasil' },
   { pattern: /\bdispur\b/, area: 'Dispur' },
   { pattern: /tarun\s?nagar/, area: 'Tarun Nagar' },
   { pattern: /fancy\s?bazaar/, area: 'Fancy Bazaar' },
@@ -223,6 +313,12 @@ const AREA_KEYWORDS = [
   { pattern: /sundarpur/, area: 'Sundarpur' },
   { pattern: /ulubari|south\s?sarania/, area: 'Ulubari' },
   { pattern: /zoo\s?tiniali|zoo\s?road/, area: 'Zoo Tiniali' },
+  { pattern: /machkhowa/, area: 'Machkhowa' },
+  { pattern: /chandmari/, area: 'Chandmari' },
+  { pattern: /rajgarh/, area: 'Rajgarh' },
+  { pattern: /fatasil/, area: 'Fatasil Hills' },
+  { pattern: /kharghuli/, area: 'Kharghuli Hills' },
+  { pattern: /borbari/, area: 'Borbari' },
 ];
 
 function matchCuisines(text) {
@@ -263,7 +359,7 @@ function parseBudgetSignal(text) {
   return null;
 }
 
-const FOOD_TRIGGER = /\b(restaurants?|food|dining|dine|eat(?:ing|s)?|cuisine|lunch|dinner|breakfast|thali|caf[eé]|meal|hungry)\b/;
+const FOOD_TRIGGER = /\b(restaurants?|food|dining|dine|eat(?:ing|s)?|cuisine|lunch|dinner|breakfast|thali|caf[eé]s?|meal|hungry)\b/;
 
 // Looks at what the visitor actually asked and returns only the matching
 // restaurants. Returns [] both when the message isn't food-related at all,
