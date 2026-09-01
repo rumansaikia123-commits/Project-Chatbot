@@ -103,14 +103,24 @@ such as a sunset cruise on the Brahmaputra, a nice dinner somewhere, or a
 lively bar/club scene. Only bring up the specific venues below once they've
 actually clarified they're after that kind of night.
 
+The nightlife list and the restaurant list below are completely independent
+of each other — a visitor can easily ask about both in one message (e.g.
+"restaurants and bars in Guwahati"). Judge each list only by whether IT is
+empty, never by the other one. A visitor asking about both categories at
+once, where only one of the two lists happens to have matches, is normal —
+answer fully for whichever list has real entries, and only skip the other
+category if its own list below is empty.
+
 If the visitor is asking about nightlife, bars, clubs, lounges, rooftops, or
 live music, here are the ONLY venues you may recommend — do not mention any
 other bar, club, lounge, or nightlife venue from your own general knowledge,
 even if you believe it's real, since we can only vouch for the accuracy of
 this specific, hand-verified list. Recommend a few that best match what
 they're asking for (an area, a specific vibe, etc.), using each venue's
-[tags] as a guide to what it's known for. If this list is empty, it means
-the question wasn't about nightlife — don't bring up venues unprompted:
+[tags] as a guide to what it's known for. If THIS NIGHTLIFE list below is
+empty, it means the question wasn't about nightlife — don't bring up venues
+unprompted. If it has entries, use them, regardless of what the separate
+restaurant list further below contains:
 
 ${formatVenueList(relevantVenues)}
 
@@ -125,9 +135,10 @@ ONLY restaurants you may recommend — do not mention any other restaurant
 or eatery from your own general knowledge, even if you believe it's real,
 since we can only vouch for the accuracy of this specific, hand-verified
 list. Use each restaurant's cuisine, rating, and approximate cost for two
-to match what they're asking for. If this list is empty, it means either
-the question wasn't about food, or it was too vague to narrow down — don't
-bring up restaurants unprompted:
+to match what they're asking for. If THIS RESTAURANT list below is empty,
+it means either the question wasn't about food, or it was too vague to
+narrow down — don't bring up restaurants unprompted. This does not affect
+the separate nightlife list above in any way:
 
 ${formatRestaurantList(relevantRestaurants)}`;
 }

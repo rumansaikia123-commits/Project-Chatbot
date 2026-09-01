@@ -82,7 +82,9 @@ function getRelevantVenues(message) {
   const isLiveMusic = /live\s?(music|band)|karaoke|\bgig(?!a)/.test(text);
   // (?!i) after "chill" stops it matching inside "chilli"/"chillies" (the pepper),
   // while still matching "chill", "chilling", "chilled".
-  const isBarOrLounge = /\bbar\b|\blounge\b|\bpub\b|\bdrink|nightlife|hang\s?out|\bparty|\bchill(?!i)|alcohol/.test(text);
+  // "s?" on bar/lounge/pub so plurals ("bars", "lounges", "pubs" — the most
+  // natural way to ask) match too, not just the singular form.
+  const isBarOrLounge = /\bbars?\b|\blounges?\b|\bpubs?\b|\bdrink|nightlife|hang\s?out|\bparty|\bchill(?!i)|alcohol/.test(text);
 
   const wantsTags = new Set();
   if (isClub) wantsTags.add('clubbing');

@@ -89,6 +89,14 @@ app.post('/api/chat', async (req, res) => {
       config: {
         systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants),
         maxOutputTokens: 2048,
+        // Without this, the model's default randomness made it ignore real,
+        // correctly-provided venue/restaurant data surprisingly often —
+        // e.g. claiming "no bars on hand" despite 15 being listed right in
+        // its own instructions. Confirmed via repeated side-by-side testing:
+        // near-total failure at the default temperature, 5/5 correct at 0.2.
+        // Lower temperature makes replies a little more uniform in phrasing,
+        // but that's a small trade for actually using the data it's given.
+        temperature: 0.2,
       },
     });
 

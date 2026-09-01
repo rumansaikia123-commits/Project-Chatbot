@@ -186,6 +186,57 @@
       mentions — stale context doesn't force bad behavior, it just no
       longer disappears when it's still needed
 
+## Bug fix: "bars"/"pubs"/"lounges" (plural) matched nothing (2026-09-01)
+- [x] Reported by the user from a real screenshot: asking about "restaurants
+      and bars" got "I don't have any specific venues to recommend." Root
+      cause: `venues.js`'s nightlife regex used `\bbar\b`, `\blounge\b`,
+      `\bpub\b` — the trailing `\b` fails right after "bar" when "s"
+      immediately follows, so the plural forms (the most natural way to
+      ask) matched zero, every time. Singular forms worked fine. Same class
+      of bug as the earlier "cafes" fix, just never applied here
+- [x] Fixed: `\bbars?\b|\blounges?\b|\bpubs?\b` in `venues.js`. While
+      auditing for the same mistake elsewhere, also fixed plausible-plural
+      cuisine keywords in `restaurants.js` (pizza/pizzas, pasta/pastas,
+      dosa/dosas, idli/idlis, biryani/biryanis, buffet/buffets, bbq/bbqs)
+- [x] Verified directly: "bars"/"lounges"/"pubs" all now match (previously
+      0, now correctly matching real venues); singular forms and existing
+      matches unaffected
+- [x] Separately found while testing (not a code bug): the same exact
+      request, with correct data confirmed present in the prompt, still got
+      an incorrect "no data" reply from Gemini a large fraction of the
+      time. Traced this to `gemini-3.5-flash-lite`'s default response
+      randomness — confirmed via controlled side-by-side testing (identical
+      prompt, only the `temperature` setting changed): near-total failure
+      at the default temperature, reliably correct at `temperature: 0.2`.
+      Added `temperature: 0.2` to the `generateContent` call in `server.js`
+- [x] Also strengthened the wording in `systemPrompt.js` so the nightlife
+      and restaurant "if this list is empty" guardrails are explicit that
+      they're independent of each other (a visitor can ask about both
+      "restaurants and bars" at once; an empty restaurant list — e.g.
+      because it was too vague to narrow down — must not make the model
+      withhold the separate, non-empty nightlife list)
+- [x] Testing note for future sessions: repeated "server restarts" during
+      this session's debugging silently failed to actually kill the old
+      process (`Stop-Process` reported success but the original process,
+      running since the session's first server start, was still the one
+      answering every request) — several rounds of confusing test results
+      were actually the OLD code answering, not the fix. Confirmed via
+      `Get-Process -Id <pid> | Select StartTime` showing the "new" process
+      was hours old. Fixed by using `taskkill /PID <pid> /F` instead and
+      verifying the process list is empty before restarting. Worth
+      remembering: always confirm a server was actually restarted (new PID,
+      recent start time) before trusting a "no change" test result
+- [x] Full regression sweep against a genuinely fresh server process: the
+      original failing message, the multi-turn coffee transcript, and an
+      existing cuisine query all still work correctly
+- [x] Honest limitation, not fully solved: even after all of the above, this
+      specific compound phrasing ("restaurants AND bars" together, with a
+      typo in the same message) still occasionally gets a suboptimal reply
+      from Gemini. `temperature: 0.2` measurably improved reliability a
+      lot, but didn't make it perfect — this is inherent variability in the
+      free-tier "lite" model, not something further fixable in our own code
+      without changing which model is used
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
