@@ -34,6 +34,16 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Expected a non-empty list of messages.' });
   }
 
+  // Catch malformed messages (missing/blank content) here, before they reach
+  // Gemini — otherwise the SDK throws on them and the failure gets wrongly
+  // reported as a Gemini-side error instead of a bad request.
+  const hasInvalidMessage = messages.some(
+    (message) => typeof message.content !== 'string' || message.content.trim() === ''
+  );
+  if (hasInvalidMessage) {
+    return res.status(400).json({ error: 'Each message must include non-empty text content.' });
+  }
+
   try {
     // Gemini expects each message as { role, parts: [{ text }] }, and uses
     // "model" instead of "assistant" for the bot's own earlier replies.

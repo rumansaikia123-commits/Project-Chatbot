@@ -74,8 +74,12 @@ function getRelevantVenues(message) {
 
   const isClub = /\bclub(bing)?|nightclub/.test(text);
   const isRooftop = /roof\s?top/.test(text);
-  const isLiveMusic = /live\s?(music|band)|karaoke|gig/.test(text);
-  const isBarOrLounge = /\bbar\b|\blounge\b|\bpub\b|drink|nightlife|hang\s?out|party|chill|alcohol/.test(text);
+  // (?!a) after "gig" stops it matching inside words like "gigabyte"/"gigahertz",
+  // while still matching "gig", "gigs", "any gigs tonight".
+  const isLiveMusic = /live\s?(music|band)|karaoke|\bgig(?!a)/.test(text);
+  // (?!i) after "chill" stops it matching inside "chilli"/"chillies" (the pepper),
+  // while still matching "chill", "chilling", "chilled".
+  const isBarOrLounge = /\bbar\b|\blounge\b|\bpub\b|\bdrink|nightlife|hang\s?out|\bparty|\bchill(?!i)|alcohol/.test(text);
 
   const wantsTags = new Set();
   if (isClub) wantsTags.add('clubbing');

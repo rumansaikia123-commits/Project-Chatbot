@@ -62,6 +62,23 @@
 - [ ] Real "Sign in with Google" login via Supabase (free tier, avoids us ever handling passwords ourselves)
 - [ ] Per-person saved chat history
 
+## Bug fixes found in live QA review (2026-09-01)
+- [x] `server.js`: a chat message missing/blank `content` currently reaches the
+      Gemini SDK, throws there, and gets mislabeled as "Something went wrong
+      talking to Gemini." Added up-front validation so this returns a clear
+      400 "invalid message format" error instead. Verified locally: missing
+      `content` and blank `content` both now return the new 400 error; a
+      normal valid message still gets a real Gemini reply.
+- [x] `venues.js`: keyword regexes for `gig`, `chill`, `drink`, `party` had no
+      word boundaries, so they matched inside unrelated words (e.g.
+      "gigabyte", "chilli"). Added a `\b` word-start boundary to `drink`/
+      `party`, and a negative lookahead on `gig`/`chill` so they don't match
+      inside "gigabyte"/"chilli" while still matching "gigs", "chilling",
+      etc. Verified with 6 test phrases (real nightlife questions, "gigabyte
+      internet speed", "chilli souvenir") — all matched as expected.
+- [ ] Commit and push (with confirmation before the push), then manually
+      deploy on Render.
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
