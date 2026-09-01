@@ -377,6 +377,26 @@ function getRelevantRestaurants(message) {
   const matchedAreas = matchAreas(text);
   const budget = parseBudgetSignal(text);
 
+  // A few cuisines are unlike most others: in casual speech they usually
+  // imply "not a regular sit-down restaurant" rather than reinforcing the
+  // word "restaurant" (compare "Chinese restaurant," where the two words
+  // agree). So a message like "a cafe for breakfast, a restaurant for
+  // lunch" mentions both — but narrowing to Cafe-only would then starve the
+  // "restaurant" half of the request of every non-cafe option, which is
+  // exactly a real bug a user hit. Confirmed the same problem exists for
+  // Mithai/Bakery/Street Food too (e.g. "bakery in the morning and a
+  // restaurant for dinner" was starved the identical way). Only when one of
+  // these is the SOLE matched cuisine (not "cafe and Chinese food", which
+  // already works fine via the normal OR-match) and the generic word
+  // "restaurant" also appears, treat the cuisine as too narrow to apply and
+  // fall through to the broader top-rated pool.
+  const SHOP_LIKE_CUISINES = new Set(['Cafe', 'Mithai', 'Bakery', 'Street Food']);
+  const onlyShopLikeCuisinesMatched =
+    matchedCuisines.size > 0 && [...matchedCuisines].every((c) => SHOP_LIKE_CUISINES.has(c));
+  if (onlyShopLikeCuisinesMatched && /\brestaurants?\b/.test(text)) {
+    matchedCuisines.clear();
+  }
+
   const isFoodQuestion = FOOD_TRIGGER.test(text) || matchedCuisines.size > 0;
   if (!isFoodQuestion) return [];
 

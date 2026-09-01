@@ -380,6 +380,70 @@ nightlife venues stay as plain text for now.
       total across both categories in sequence, correctly styled, zero
       browser console errors in either case
 
+## Bug fix: multi-part requests starved of options (2026-09-01)
+- [x] Reported live with a screenshot: "Plan a cafe for breakfast, a
+      restaurant for lunch and a club for dinner" got only cafes for the
+      restaurant list, and the bot said it had no "traditional restaurant"
+      for lunch. Root cause confirmed via direct testing: the word "cafe"
+      matched the Cafe cuisine, which then narrowed the ENTIRE candidate
+      pool to cafe-only restaurants — genuinely zero non-cafe options were
+      ever handed to the model, so its answer was honest given what it had
+- [x] Considered a broader fix (splitting compound "X for breakfast, Y for
+      lunch" messages into separate matched requests) but scoped down to a
+      narrower, safer fix per discussion: "cafe" is the one cuisine word
+      that in casual speech usually implies "not a regular restaurant"
+      (unlike e.g. "Chinese restaurant," where the words reinforce each
+      other). Only when Cafe is the SOLE matched cuisine and the generic
+      word "restaurant" also appears, the cuisine filter is now skipped so
+      the full top-rated pool is available instead of cafe-only
+- [x] Verified the fix doesn't regress the cases it could plausibly break:
+      "Chinese restaurant" still narrows to Chinese only; a plain "cafes
+      nearby" query still narrows to cafes only; "cafe or Chinese food"
+      (two cuisines matched, not just Cafe) is unaffected since it never
+      hit the narrow condition; "cafes in Uzan Bazar" (no "restaurant"
+      word) still narrows to cafes
+- [x] Verified live: the exact reported message now gets a real, sensible
+      plan — a cafe for breakfast, a genuine non-cafe restaurant (Urban
+      Desi Kitchen) for lunch, and a dual-listed venue for dinner that
+      correctly appears in both restaurantRecommendations and
+      nightlifeRecommendations since it fits both "restaurant" and "club"
+
+## Stress-tested the fix with varied phrasings, found and fixed the same bug in 3 more cuisines
+- [x] Ran ~14 made-up questions covering: paraphrases of the original bug
+      ("coffee shop for breakfast and a restaurant for dinner", etc.),
+      sightseeing combos (temple + restaurant, zoo + breakfast, river
+      cruise + dinner, shopping + cafe, temple + zoo + cafe + restaurant),
+      and deliberately probing whether other "shop-like" cuisines had the
+      identical starvation bug as Cafe
+- [x] All cafe/restaurant paraphrases and sightseeing combos: correct —
+      real non-cafe restaurant options present every time. "Shopping at
+      Fancy Bazaar then a cafe" correctly returned zero (genuinely no cafe
+      located in that area — not a bug)
+- [x] Found: the exact same starvation bug also existed for Mithai
+      ("sweet shop"), Bakery, and Street Food — e.g. "bakery in the
+      morning and a restaurant for dinner" returned only 2 matches, both
+      bakery-tagged, zero real restaurants, identical root cause to the
+      Cafe bug just never generalized to these
+- [x] Found a second gap while fixing it: "sweet shop for dessert and a
+      restaurant for dinner" matches BOTH Mithai ("sweet") and Bakery
+      ("dessert") simultaneously, so the original `size === 1` check never
+      fired for it even after adding Mithai to the shop-like set. Changed
+      the condition from "exactly one shop-like cuisine matched" to "every
+      matched cuisine is shop-like" so multi-shop-cuisine combinations are
+      covered too
+- [x] Verified the broadened fix doesn't regress: "Chinese restaurant"
+      still narrows to Chinese; "cafe or Chinese food" (a real specific
+      cuisine mixed with a shop-like one) still narrows via the normal
+      OR-match, unaffected; plain "cafes"/"bakery"/"street food" queries
+      with no "restaurant" word still narrow correctly; "buffet
+      restaurant" still narrows to Buffet (Buffet isn't shop-like — buffet
+      implies a full restaurant, not a quick-bite shop)
+- [x] Verified live: zoo+breakfast, temple+restaurant, and the sweet-shop
+      case all produce natural, correct replies — real non-shop restaurant
+      options present, and for the sweet-shop case the bot honestly says
+      it has no verified sweet shop while still recommending bakeries for
+      dessert and real restaurants for dinner, instead of stonewalling
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
