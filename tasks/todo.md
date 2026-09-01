@@ -276,6 +276,67 @@
       bars" (nightlife-only), a narrow cuisine+area query, and the
       multi-turn coffee conversation from the earlier fix — all still work
 
+## Learning project: structured output for restaurant recommendations (plan only — not started)
+Goal: learn "structured output" — instead of Gemini writing restaurant
+recommendations as a sentence (which the frontend then guess-formats with
+`**bold**`/`* bullets`), ask Gemini to fill in a strict JSON template
+(name, area, rating, cost, etc. as real data fields), then render that as
+actual visual cards. Scoped to restaurants only for this first pass —
+nightlife venues stay as plain text for now.
+
+- [x] Checked the installed `@google/genai@2.19.0` package's real type
+      definitions (`node_modules/@google/genai/dist/genai.d.ts`) before
+      writing any schema, rather than guessing — confirmed
+      `responseMimeType`/`responseSchema` on `GenerateContentConfig`, the
+      `Schema` interface's exact shape, and that `Type` (STRING/NUMBER/
+      ARRAY/OBJECT/etc.) is a real importable runtime value, not just a
+      TypeScript type. Verified with a live throwaway test call before
+      touching any real code — got back exactly the requested JSON shape
+- [x] Designed the schema: a `reply` string (normal conversational text —
+      greetings, itinerary advice, clarifying questions, and nightlife all
+      still work exactly as before) plus a `recommendations` array (empty
+      unless the reply is recommending restaurants; each entry: name, area,
+      cuisines, rating, costForTwo, highlight)
+- [x] `server.js`: added `CHAT_RESPONSE_SCHEMA`, wired `responseMimeType:
+      'application/json'` + `responseSchema` into the Gemini call, parse
+      `response.text` as JSON with a try/catch fallback (raw text +
+      empty recommendations) if parsing ever fails, send
+      `{ reply, recommendations }` to the frontend instead of just `{ reply }`
+- [x] `systemPrompt.js`: reworded the restaurant guardrail for the new
+      format — populate `recommendations` using ONLY entries from the
+      provided list, copying name/area/cuisines/rating/cost exactly rather
+      than describing them in prose; empty `recommendations` still means
+      "leave restaurants out," same guardrail as before, different field
+- [x] `public/script.js`: added `addRecommendationCards()`, built with
+      `createElement`/`textContent` (no `innerHTML`) for safety, called
+      after showing the reply whenever `data.recommendations` is non-empty
+- [x] `public/style.css`: added `.recommendation-card` styles reusing the
+      page's existing gold/cream/dark-glass theme variables (gold left
+      border, star rating in gold, italic highlight text)
+- [x] Bug found and fixed during testing: the pre-existing "If this list is
+      empty, it means the question wasn't about food" guardrail wording
+      (accurate before, since an empty list only ever meant "not food")
+      started causing real, reproducible harm once structured output was
+      introduced — a genuinely on-topic but unmatched query ("cheap North
+      Indian near Khanapara") got the OFF-TOPIC decline template instead of
+      an honest "no verified match, here's general advice" answer,
+      confirmed 3/3 reproducible. Reworded to explicitly distinguish
+      "not about food" from "about food, no verified match for this
+      combination" and instruct the model to stay helpful in the latter
+      case. Reverified 3/3 correct afterward
+- [x] Verified end-to-end, including a real headless-browser screenshot
+      test (Playwright, since no `chromium-cli`/project run-skill existed —
+      installed Playwright to a scratch directory, not the project, for
+      this one-off check): a single-recommendation query renders one
+      correctly-styled card (name, gold star rating, cost, area, cuisines,
+      italic highlight); a broad query ("top rated cafes") renders multiple
+      cards stacked cleanly with no overflow or misalignment; zero browser
+      console errors in either case. Also verified via direct API calls:
+      general conversation and nightlife questions still return normal
+      prose with an empty `recommendations` array; a genuinely off-topic
+      question ("capital of France") still declines correctly; the
+      "only recommend from our verified list" guardrail holds
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

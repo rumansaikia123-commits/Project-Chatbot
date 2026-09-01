@@ -5,10 +5,48 @@
 require('dotenv').config(); // loads secret values from .env into process.env
 
 const express = require('express');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenAI, Type } = require('@google/genai');
 const buildSystemPrompt = require('./systemPrompt');
 const { getRelevantVenues } = require('./venues');
 const { getRelevantRestaurants } = require('./restaurants');
+
+// "Structured output": instead of letting Gemini write its whole answer as
+// one block of prose (which the frontend then has to guess-format with
+// markdown tricks like **bold**), this schema tells Gemini to fill in a
+// strict template — real, typed data fields — for any restaurants it
+// recommends. `Type` (imported above) is just an enum of the data types
+// this schema understands: STRING, NUMBER, ARRAY, OBJECT, etc.
+//
+// This applies to every reply, not just restaurant ones — a greeting or a
+// nightlife question still comes back with a normal `reply` string, just
+// with an empty `recommendations` array alongside it.
+const CHAT_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    reply: {
+      type: Type.STRING,
+      description: 'The conversational reply text shown to the visitor.',
+    },
+    recommendations: {
+      type: Type.ARRAY,
+      description:
+        'Restaurants being recommended in this reply. Empty if this reply is not recommending restaurants.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          cuisines: { type: Type.ARRAY, items: { type: Type.STRING } },
+          rating: { type: Type.NUMBER },
+          costForTwo: { type: Type.NUMBER, nullable: true },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'cuisines', 'rating', 'highlight'],
+      },
+    },
+  },
+  required: ['reply', 'recommendations'],
+};
 
 const app = express();
 // Hosting platforms assign their own port via this environment variable;
@@ -97,10 +135,27 @@ app.post('/api/chat', async (req, res) => {
         // Lower temperature makes replies a little more uniform in phrasing,
         // but that's a small trade for actually using the data it's given.
         temperature: 0.2,
+        // Forces the reply to match CHAT_RESPONSE_SCHEMA exactly, instead of
+        // being free-form text.
+        responseMimeType: 'application/json',
+        responseSchema: CHAT_RESPONSE_SCHEMA,
       },
     });
 
-    res.json({ reply: response.text });
+    // response.text is now a JSON string (matching the schema above), not
+    // plain prose — parse it into a real object before sending it on.
+    let parsed;
+    try {
+      parsed = JSON.parse(response.text);
+    } catch (parseError) {
+      // Structured output is normally guaranteed to match the schema, but
+      // if it's ever malformed for some reason, fall back to showing the
+      // raw text rather than failing the whole request.
+      console.error('Failed to parse structured response:', parseError.message);
+      parsed = { reply: response.text, recommendations: [] };
+    }
+
+    res.json({ reply: parsed.reply, recommendations: parsed.recommendations });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);
     res.status(500).json({ error: 'Something went wrong talking to Gemini.' });

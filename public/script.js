@@ -45,6 +45,69 @@ function addMessageToPage(text, sender) {
   return bubble;
 }
 
+// Builds one visual "card" per recommended restaurant, using the structured
+// data the server now sends (name/area/rating/etc. as real fields, not text
+// to parse). Everything here uses createElement + textContent rather than
+// innerHTML, so even though this data ultimately passed through the AI, it
+// can never be interpreted as HTML — same safety idea as formatBotReply's
+// escaping, just done a different way since we're building real elements
+// instead of one big string.
+function addRecommendationCards(recommendations) {
+  if (!recommendations || recommendations.length === 0) return;
+
+  const container = document.createElement('div');
+  container.className = 'recommendation-cards';
+
+  for (const rec of recommendations) {
+    const card = document.createElement('div');
+    card.className = 'recommendation-card';
+
+    const name = document.createElement('div');
+    name.className = 'rec-name';
+    name.textContent = rec.name;
+    card.appendChild(name);
+
+    const meta = document.createElement('div');
+    meta.className = 'rec-meta';
+
+    const rating = document.createElement('span');
+    rating.className = 'rec-rating';
+    rating.textContent = `★ ${rec.rating}`;
+    meta.appendChild(rating);
+
+    const cost = document.createElement('span');
+    cost.className = 'rec-cost';
+    cost.textContent = rec.costForTwo != null ? `~₹${rec.costForTwo} for two` : 'price not listed';
+    meta.appendChild(cost);
+
+    card.appendChild(meta);
+
+    const area = document.createElement('div');
+    area.className = 'rec-area';
+    area.textContent = rec.area;
+    card.appendChild(area);
+
+    if (rec.cuisines && rec.cuisines.length > 0) {
+      const cuisines = document.createElement('div');
+      cuisines.className = 'rec-cuisines';
+      cuisines.textContent = rec.cuisines.join(', ');
+      card.appendChild(cuisines);
+    }
+
+    if (rec.highlight) {
+      const highlight = document.createElement('div');
+      highlight.className = 'rec-highlight';
+      highlight.textContent = rec.highlight;
+      card.appendChild(highlight);
+    }
+
+    container.appendChild(card);
+  }
+
+  messagesEl.appendChild(container);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
 formEl.addEventListener('submit', async (event) => {
   event.preventDefault(); // stops the page from reloading, which is the browser's default for forms
 
@@ -76,6 +139,7 @@ formEl.addEventListener('submit', async (event) => {
 
     thinkingBubble.remove();
     addMessageToPage(data.reply, 'bot');
+    addRecommendationCards(data.recommendations);
     conversation.push({ role: 'assistant', content: data.reply });
   } catch (error) {
     thinkingBubble.remove();
