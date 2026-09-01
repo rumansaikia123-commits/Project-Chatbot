@@ -237,6 +237,45 @@
       free-tier "lite" model, not something further fixable in our own code
       without changing which model is used
 
+## Fix: generic restaurant/cafe questions got stonewalled (2026-09-01)
+- [x] Reported live: "Top rated bars and restaurants in Guwahati?" got a
+      real answer for bars but a non-answer for restaurants ("my curated
+      list of restaurants is currently taking a little break"), with no
+      actual follow-up question asked. Root cause: a real design asymmetry,
+      not a bug in either feature alone — `venues.js` has no "vague" gate
+      (a broad "top rated bars" already returns every matching venue
+      immediately), while `restaurants.js` deliberately returned `[]` for a
+      fully generic food question so the bot would ask a clarifying
+      question — but in practice, inside a compound question that also had
+      a real nightlife answer, it wasn't reliably asking that follow-up
+- [x] Fixed by making restaurants behave like nightlife already does:
+      `getRelevantRestaurants` no longer returns `[]` for a broad/generic
+      food question. Instead it applies whatever filters were actually
+      given (possibly none), then always sorts by rating and caps at the
+      top 10 — so "top rated restaurants" now returns the 10 highest-rated
+      restaurants overall, and "top rated cafes" (or just "cafes") returns
+      the top 10 cafes specifically, both with real data, immediately.
+      Narrow queries (e.g. "Chinese food near Six Mile", 1 result) are
+      unaffected since sorting/capping a short list is a no-op
+- [x] Updated the restaurant guardrail in `systemPrompt.js` to match: it no
+      longer tells Gemini to ask a clarifying question for a vague food
+      request (that state doesn't exist anymore — a "vague" request now
+      arrives with 10 real top-rated entries), and the "if this list is
+      empty" explanation now only says "wasn't about food" instead of also
+      mentioning vagueness, since vagueness alone no longer produces an
+      empty list
+- [x] `venues.js` and the nightlife guardrail were left untouched — that
+      side already behaved the way restaurants now does
+- [x] Verified directly: "top rated restaurants" → 10 results sorted by
+      rating; "top rated cafes" → 10 results, all cuisine `Cafe`, sorted by
+      rating; narrow queries and non-food queries unaffected
+- [x] Verified live against a genuinely fresh server process (confirmed by
+      PID/start time this time): replayed the exact reported message and
+      got a full, real answer for both restaurants and bars in one reply;
+      "top rated cafes" alone also verified; regression-checked "best
+      bars" (nightlife-only), a narrow cuisine+area query, and the
+      multi-turn coffee conversation from the earlier fix — all still work
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

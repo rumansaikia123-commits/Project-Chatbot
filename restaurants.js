@@ -362,9 +362,14 @@ function parseBudgetSignal(text) {
 const FOOD_TRIGGER = /\b(restaurants?|food|dining|dine|eat(?:ing|s)?|cuisine|lunch|dinner|breakfast|thali|caf[eé]s?|meal|hungry)\b/;
 
 // Looks at what the visitor actually asked and returns only the matching
-// restaurants. Returns [] both when the message isn't food-related at all,
-// and when it's a food question too vague to narrow down (so
-// systemPrompt.js can ask a clarifying question instead of guessing).
+// restaurants. Returns [] only when the message isn't food-related at all.
+// A broad food question (no cuisine/budget/area given, e.g. "top rated
+// restaurants" or just "cafes") no longer returns nothing — it falls
+// through to the sort-and-cap step below with zero filters applied, so it
+// gets real top-rated picks, the same way a broad "top rated bars" nightlife
+// question already gets an immediate real answer instead of a stonewall.
+const TOP_N = 10;
+
 function getRelevantRestaurants(message) {
   const text = message.toLowerCase();
 
@@ -374,9 +379,6 @@ function getRelevantRestaurants(message) {
 
   const isFoodQuestion = FOOD_TRIGGER.test(text) || matchedCuisines.size > 0;
   if (!isFoodQuestion) return [];
-
-  const noSpecificFilter = matchedCuisines.size === 0 && !budget && matchedAreas.length === 0;
-  if (noSpecificFilter) return [];
 
   let results = restaurants;
   if (matchedCuisines.size > 0) {
@@ -391,7 +393,12 @@ function getRelevantRestaurants(message) {
     results = results.filter((r) => matchedAreas.some((area) => r.area.toLowerCase().includes(area.toLowerCase())));
   }
 
-  return results;
+  // Sorting and capping every result (not just the broad/unfiltered case)
+  // means a narrow match ("Chinese food near Six Mile", 1 result) is
+  // unaffected, while a broad one ("cafes", ~27 matches) becomes a concise
+  // top-10 "best of" list instead of either nothing or a huge unsorted wall.
+  const sorted = [...results].sort((a, b) => b.rating - a.rating);
+  return sorted.slice(0, TOP_N);
 }
 
 module.exports = { restaurants, getRelevantRestaurants };

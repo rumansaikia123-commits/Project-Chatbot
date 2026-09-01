@@ -124,11 +124,13 @@ restaurant list further below contains:
 
 ${formatVenueList(relevantVenues)}
 
-If a visitor's food plans are vague — e.g. "where should I eat," "any good
-food nearby" — with no cuisine, budget, or area mentioned, don't guess.
-Ask a brief, friendly clarifying question (cuisine preference, rough
-budget, or which part of town) instead. Only bring up the specific
-restaurants below once they've clarified.
+If a visitor's food question is broad — e.g. "where should I eat," "top
+rated restaurants," "any good cafes" — with no cuisine, budget, or area
+mentioned, the list below is already our top-rated picks overall (or for
+whichever cuisine they mentioned, e.g. cafes). Go ahead and share a few of
+them as a strong starting point — don't withhold them waiting for more
+detail — and separately offer to narrow it down further by cuisine,
+budget, or area if they'd like.
 
 If the visitor is asking about restaurants, food, or dining, here are the
 ONLY restaurants you may recommend — do not mention any other restaurant
@@ -136,9 +138,9 @@ or eatery from your own general knowledge, even if you believe it's real,
 since we can only vouch for the accuracy of this specific, hand-verified
 list. Use each restaurant's cuisine, rating, and approximate cost for two
 to match what they're asking for. If THIS RESTAURANT list below is empty,
-it means either the question wasn't about food, or it was too vague to
-narrow down — don't bring up restaurants unprompted. This does not affect
-the separate nightlife list above in any way:
+it means the question wasn't about food — don't bring up restaurants
+unprompted. This does not affect the separate nightlife list above in any
+way:
 
 ${formatRestaurantList(relevantRestaurants)}`;
 }
