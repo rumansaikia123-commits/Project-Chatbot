@@ -45,14 +45,19 @@ function addMessageToPage(text, sender) {
   return bubble;
 }
 
-// Builds one visual "card" per recommended restaurant, using the structured
-// data the server now sends (name/area/rating/etc. as real fields, not text
-// to parse). Everything here uses createElement + textContent rather than
-// innerHTML, so even though this data ultimately passed through the AI, it
-// can never be interpreted as HTML — same safety idea as formatBotReply's
-// escaping, just done a different way since we're building real elements
-// instead of one big string.
-function addRecommendationCards(recommendations) {
+// Builds one visual "card" per recommendation (restaurant or nightlife
+// venue), using the structured data the server now sends (name/area/
+// rating/etc. as real fields, not text to parse). Everything here uses
+// createElement + textContent rather than innerHTML, so even though this
+// data ultimately passed through the AI, it can never be interpreted as
+// HTML — same safety idea as formatBotReply's escaping, just done a
+// different way since we're building real elements instead of one string.
+//
+// Shared between restaurants (which call the field "cuisines") and
+// nightlife venues (which call it "tags") — `tagField` says which
+// property to read for that row of labels, so the same function draws
+// both kinds of card instead of writing two near-identical versions.
+function addRecommendationCards(recommendations, tagField) {
   if (!recommendations || recommendations.length === 0) return;
 
   const container = document.createElement('div');
@@ -72,7 +77,7 @@ function addRecommendationCards(recommendations) {
 
     const rating = document.createElement('span');
     rating.className = 'rec-rating';
-    rating.textContent = `★ ${rec.rating}`;
+    rating.textContent = rec.rating != null ? `★ ${rec.rating}` : 'unrated';
     meta.appendChild(rating);
 
     const cost = document.createElement('span');
@@ -87,11 +92,12 @@ function addRecommendationCards(recommendations) {
     area.textContent = rec.area;
     card.appendChild(area);
 
-    if (rec.cuisines && rec.cuisines.length > 0) {
-      const cuisines = document.createElement('div');
-      cuisines.className = 'rec-cuisines';
-      cuisines.textContent = rec.cuisines.join(', ');
-      card.appendChild(cuisines);
+    const tags = rec[tagField];
+    if (tags && tags.length > 0) {
+      const tagsEl = document.createElement('div');
+      tagsEl.className = 'rec-cuisines';
+      tagsEl.textContent = tags.join(', ');
+      card.appendChild(tagsEl);
     }
 
     if (rec.highlight) {
@@ -139,7 +145,8 @@ formEl.addEventListener('submit', async (event) => {
 
     thinkingBubble.remove();
     addMessageToPage(data.reply, 'bot');
-    addRecommendationCards(data.recommendations);
+    addRecommendationCards(data.restaurantRecommendations, 'cuisines');
+    addRecommendationCards(data.nightlifeRecommendations, 'tags');
     conversation.push({ role: 'assistant', content: data.reply });
   } catch (error) {
     thinkingBubble.remove();

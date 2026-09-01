@@ -337,6 +337,49 @@ nightlife venues stay as plain text for now.
       question ("capital of France") still declines correctly; the
       "only recommend from our verified list" guardrail holds
 
+## Extended structured output to nightlife venues (cafes already covered)
+- [x] Cafes needed no new work — they're just restaurants with
+      `cuisine: 'Cafe'`, already flowing through `restaurantRecommendations`
+- [x] `venues.js`: added real `rating`/`costForTwo` fields to all 26
+      entries (previously embedded in free-text `notes`, e.g. "...4.8★,
+      ~₹2,500 for two"), extracted by hand from the existing text; renamed
+      `notes` to `highlight` to match `restaurants.js`'s naming. `rating`
+      left `null` for venues that never had one in the source data rather
+      than inventing a number (several: Shanghai Salsa, The Lounge -
+      Dynasty, NYX Lounge and Deck, The Locals, The Vibe House, Olive
+      Garden, Elevate Bar & Bistro, The Root Barrel, The Socialite, 188
+      Downtown, Trafik Lounge Bar & Restaurant)
+- [x] `systemPrompt.js`: `formatVenueList` updated to show the new
+      rating/cost fields; response now has three parts (`reply`,
+      `restaurantRecommendations`, `nightlifeRecommendations`) instead of
+      two; nightlife guardrail reworded to populate
+      `nightlifeRecommendations` the same way the restaurant one populates
+      its array, including "rating may be null, that's expected" guidance
+- [x] `server.js`: `CHAT_RESPONSE_SCHEMA` renamed `recommendations` to
+      `restaurantRecommendations` and added a parallel
+      `nightlifeRecommendations` array (fields: name, area, tags, rating
+      [nullable], costForTwo [nullable], highlight); response to the
+      frontend now sends both arrays
+- [x] `public/script.js`: `addRecommendationCards` generalized to take a
+      `tagField` parameter ('cuisines' or 'tags') so one function renders
+      both card types instead of duplicating it; handles `rating: null` by
+      showing "unrated" instead of a blank/broken star
+- [x] Verified with direct API calls: nightlife-only query returns real
+      structured venues; restaurant-only query still works (regression);
+      a compound query ("top rated bars and restaurants") returns BOTH
+      arrays populated with real data in a single response — this is the
+      exact scenario that used to stonewall on the restaurant half in an
+      earlier session, now fully fixed by construction since both
+      categories are independent structured fields; a query surfacing an
+      unrated venue (NYX Lounge and Deck, The Locals) correctly returns
+      `rating: null`
+- [x] Verified visually with real headless-browser screenshots (Playwright,
+      scratch install, not a project dependency): nightlife-only cards
+      render correctly including the "unrated" fallback; a two-message
+      conversation (nightlife query then compound query) renders 9 cards
+      total across both categories in sequence, correctly styled, zero
+      browser console errors in either case
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

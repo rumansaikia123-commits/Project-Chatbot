@@ -13,13 +13,13 @@ const { getRelevantRestaurants } = require('./restaurants');
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
 // markdown tricks like **bold**), this schema tells Gemini to fill in a
-// strict template — real, typed data fields — for any restaurants it
-// recommends. `Type` (imported above) is just an enum of the data types
-// this schema understands: STRING, NUMBER, ARRAY, OBJECT, etc.
+// strict template — real, typed data fields — for any restaurants or
+// nightlife venues it recommends. `Type` (imported above) is just an enum
+// of the data types this schema understands: STRING, NUMBER, ARRAY, OBJECT.
 //
-// This applies to every reply, not just restaurant ones — a greeting or a
-// nightlife question still comes back with a normal `reply` string, just
-// with an empty `recommendations` array alongside it.
+// This applies to every reply, not just recommendation ones — a greeting
+// or an itinerary question still comes back with a normal `reply` string,
+// just with both recommendation arrays empty alongside it.
 const CHAT_RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -27,7 +27,7 @@ const CHAT_RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: 'The conversational reply text shown to the visitor.',
     },
-    recommendations: {
+    restaurantRecommendations: {
       type: Type.ARRAY,
       description:
         'Restaurants being recommended in this reply. Empty if this reply is not recommending restaurants.',
@@ -44,8 +44,27 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'cuisines', 'rating', 'highlight'],
       },
     },
+    nightlifeRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Nightlife venues being recommended in this reply. Empty if this reply is not recommending nightlife venues.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+          // Nullable: unlike restaurants, several venues never had a star
+          // rating in the original source data.
+          rating: { type: Type.NUMBER, nullable: true },
+          costForTwo: { type: Type.NUMBER, nullable: true },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'tags', 'rating', 'costForTwo', 'highlight'],
+      },
+    },
   },
-  required: ['reply', 'recommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations'],
 };
 
 const app = express();
@@ -152,10 +171,14 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, recommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [] };
     }
 
-    res.json({ reply: parsed.reply, recommendations: parsed.recommendations });
+    res.json({
+      reply: parsed.reply,
+      restaurantRecommendations: parsed.restaurantRecommendations,
+      nightlifeRecommendations: parsed.nightlifeRecommendations,
+    });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);
     res.status(500).json({ error: 'Something went wrong talking to Gemini.' });
