@@ -26,15 +26,22 @@ Personal recommendations / hidden gems:
 (nothing added yet)
 `;
 
-// Turns a list of matched venues (from venues.js) into a text block for the prompt.
+// Turns a list of matched venues (from venues.js) into a text block for
+// the prompt. Shows the underlying verified fields (type of place, rooftop,
+// karaoke, music/vibe) inline alongside the display tags, so Gemini can
+// reason about a venue's actual fit for what was asked, not just repeat
+// the pre-built "tags" chip row.
 function formatVenueList(venues) {
   if (venues.length === 0) return '(none relevant to this question)';
   return venues
     .map((v) => {
       const rating = v.rating != null ? `${v.rating}★` : 'unrated';
+      const reviews = v.reviewCount != null ? `${v.reviewCount} reviews` : 'review count not verified';
       const cost = v.costForTwo != null ? `~₹${v.costForTwo} for two` : 'price not listed';
-      const flag = v.lowConfidence ? ' — lower confidence, mention reviews are mixed' : '';
-      return `- ${v.name} (${v.area}) [${v.tags.join(', ')}] ${rating}, ${cost}${flag}: ${v.highlight}`;
+      const rooftop = v.rooftop ? 'rooftop: yes' : 'rooftop: no';
+      const karaoke = v.karaoke == null ? 'karaoke: not verified' : v.karaoke ? 'karaoke: yes' : 'karaoke: no';
+      const vibe = v.musicVibe.length > 0 ? v.musicVibe.join(', ') : 'n/a';
+      return `- ${v.name} (${v.area}) [${v.tags.join(', ')}] type: ${v.typeOfPlace.join(', ')}, ${rooftop}, ${karaoke}, vibe: ${vibe}, ${rating} (${reviews}), ${cost}: ${v.highlight}`;
     })
     .join('\n');
 }
@@ -171,9 +178,31 @@ real, since we can only vouch for the accuracy of this specific,
 hand-verified list. For each one you include, copy its name, area, tags,
 rating, and cost exactly as given below — don't alter or round them (a
 venue's rating may be null if none was available; that's expected, not an
-error — just leave that field null rather than guessing a number). Pick a
-few that best match what they're asking for (an area, a specific vibe,
-etc.), using each venue's tags as a guide to what it's known for. If THIS
+error — just leave that field null rather than guessing a number). Show
+every venue below that genuinely fits what they're asking for, up to a
+generous handful — aim for at least 5 or 6 when that many real matches
+exist below, rather than arbitrarily stopping at 2 or 3. Only show fewer
+than that if there genuinely aren't more real matches in the list below —
+never pad the list with a venue that doesn't actually fit just to hit a
+count. Use each venue's full line below (type of place, rooftop, karaoke,
+vibe, not just the tags chips) to judge fit against what was actually
+asked, e.g. a "rooftop bar with
+karaoke" request should only surface venues where both are genuinely
+marked yes. Karaoke specifically is independently verified per venue —
+never infer it from live music, a lounge/bar description, or a venue
+"feeling like" a karaoke spot; if a venue's karaoke isn't verified, that's
+expected, not an error.
+
+Each venue's line also shows how many real reviews back up its rating —
+weigh that alongside the star rating itself when deciding what to lead
+with in "reply," the way a discerning local would. A high rating resting
+on very few or unverified reviews is not more trustworthy than a slightly
+lower rating backed by hundreds or thousands of real reviews — don't
+present the former as the safer or better-established choice just because
+the number is higher. This is about how you frame things in "reply," not
+about excluding any venue from "nightlifeRecommendations" — the list
+itself is already ordered with this in mind, so trust that order rather
+than re-sorting purely by the star number. If THIS
 NIGHTLIFE list below is empty, leave "nightlifeRecommendations" empty — it
 means the question wasn't about nightlife, so don't bring up venues
 unprompted. If it has entries, use them, regardless of what the separate
@@ -195,7 +224,12 @@ include any other restaurant or eatery from your own general knowledge,
 even if you believe it's real, since we can only vouch for the accuracy of
 this specific, hand-verified list. For each one you include, copy its
 name, area, cuisines, rating, and cost exactly as given below — don't
-alter or round them. Pick a few that best match what they're asking for.
+alter or round them. Show every restaurant below that genuinely fits what
+they're asking for, up to a generous handful — aim for at least 5 or 6
+when that many real matches exist below, rather than arbitrarily stopping
+at 2 or 3. Only show fewer than that if there genuinely aren't more real
+matches in the list below — never pad the list with one that doesn't
+actually fit just to hit a count.
 If THIS RESTAURANT list below is empty, leave "restaurantRecommendations"
 empty — but this does NOT necessarily mean the question was off-topic. It
 could simply mean

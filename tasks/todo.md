@@ -744,6 +744,144 @@ nightlife venues stay as plain text for now.
       ("cheap cafes"), parks ("parks for boating" narrow match, and the
       vague-park clarifying-question behavior) — all unaffected
 
+## Full nightlife refresh: multi-dimension matching, 26 -> 59 venues (2026-09-02)
+- [x] User supplied a large, source-checked nightlife research document (52
+      real venues across a Bar/Pub/Lounge table and a Club/Discotheque/
+      Night Club/Dance table, with real Google/Zomato/TripAdvisor ratings
+      and review counts) plus a separate "AI Master Instructions" page.
+      Reviewed both; found real rating conflicts against the live
+      `venues.js` (Elevate Bar & Bistro was flagged low-confidence with
+      4.6/114-review positive data now available; Nuts and Brew 4.8 vs
+      4.0; Maroon Room 4.9 vs 4.6; FTV 5.0 vs 4.1; Olive Garden had zero
+      rating signal vs 4,649 real reviews) — decided this document should
+      be authoritative for every venue it covers
+- [x] User explicitly ruled out using the document's "AI Notes" column
+      (subjective tier commentary like "Higher-tier addition"/"Use
+      cautiously") for anything — not highlight text, not a confidence
+      flag, not ranking — and instead required the real structured columns
+      (Type of Place, Rating/Source, Cost for Two, Rooftop, Music/Vibe,
+      Karaoke) to become genuine independent matchable dimensions, the
+      same AND-combination model `restaurants.js` already uses for
+      cuisine + area + budget, not the old flat single-`tags`-array
+      OR-match. Confirmed by design review before implementing (also
+      confirmed: drop the old `lowConfidence` flag entirely since it was
+      the same AI-Notes-style judgment call under a different name; add
+      area-matching too, since `restaurants.js`/`parks.js` already have it
+      and it wasn't in scope to leave venues.js as the one file without it)
+- [x] Rebuilt `venues.js` from scratch on this model: each venue now has
+      `typeOfPlace` (canonical array: bar-pub/lounge-bar/premium/brewery/
+      mrp-bar/club-discotheque/after-party) and `musicVibe` (canonical
+      array: rock/indie/live-music/tribute-nights/dj/edm/trance/
+      bollywood/commercial/party) instead of one flat `tags` array;
+      `rooftop`/`karaoke` are now real per-venue booleans (`karaoke: null`
+      for the 7 legacy venues the new document doesn't cover, since that's
+      genuinely unverified, not false). `tags` still exists but is now a
+      small computed display-only chip row (`buildDisplayTags`), built
+      from the verified fields, never from AI Notes, and plays no role in
+      matching
+- [x] `getRelevantVenues()` rewritten: independent matchers
+      (`matchTypeOfPlace`, `matchMusicVibe`, `matchAreas`, a rooftop
+      trigger, a karaoke trigger newly split out from the old
+      live-music-or-karaoke regex, plus reused `restaurants.js` budget
+      parsing) AND-combine whichever actually fired — "rooftop bar with
+      karaoke under 2000" now narrows on all three at once. Sorted by
+      rating and capped at `TOP_N = 10`, same as restaurants.js. The old
+      hand-written "don't let rooftop bar pull in every plain lounge"
+      exclusion hack is gone — the AND-of-independent-filters model makes
+      it structurally impossible for that to happen, no special case needed
+- [x] `restaurants.js`: exported `parseBudgetSignal` so `venues.js` could
+      reuse it instead of duplicating the cheap/expensive/under-X logic
+- [x] 19 venues already in the old `venues.js` overlapped with the new
+      document by name — updated in place with the new document's rating/
+      cost/area/type/vibe (not just rating). 33 genuinely new venues added.
+      7 venues the document doesn't cover (Lounge - Dynasty, Skye, EXORO,
+      The Socialite, 188 Downtown, Trafik, Leaf Deck Café Bar) were left
+      as real, just-not-re-verified-this-pass data, migrated to the new
+      field shape by hand from their existing tags/highlight text. Total:
+      59 venues (up from 26)
+- [x] Reclassified two venues per the newer, more detailed source: Abacus
+      Brewing Co & Kitchen and The Vibe House were previously tagged
+      `clubbing` in the old data, but the new document places both firmly
+      in the Bar/Pub table with no clubbing signal at all — corrected to
+      bar-pub (+ brewery for Abacus)
+- [x] Kept `Terra Mayaa`/`The Maroon Room`/`Abacus Brewing Co & Kitchen`'s
+      rating in sync between `venues.js` and `restaurants.js` (an existing
+      project invariant: the bot must never show two different ratings for
+      the same place depending on whether it's asked about as food or
+      nightlife) — verified directly post-change: 4.3/4.6/4.9 in both files
+- [x] Data-quality decisions made explicitly, not silently: "Noya by Nyx"
+      listed at an invalid "43.8/5" in the source — treated as unrated
+      (`null`) rather than guessing 4.8 or 3.8, with a code comment
+      explaining why. "The Beer Cafe" (City Center Mall, Christian Basti)
+      kept as a separate entry from the pre-existing "Beer Cafe" (Times
+      Square Mall, Sreenagar) since the addresses don't match — plausibly
+      two branches of the same chain, not merged on a guess. "Retrotown"
+      (a real club at its own address in the new document) kept separate
+      from "The Locals," whose old area field had used "Retrotown" as a
+      location descriptor, not a name
+- [x] Verified live against a fresh server process: "rooftop bar with
+      karaoke under 2000 rupees" correctly narrowed to exactly one real
+      match (The Whiskey Bar & Grill) across all three dimensions at once;
+      "where can I do karaoke tonight" returned only `karaoke: true`
+      venues, correctly excluding The Beer Cafe (karaoke: false) while a
+      plain "live music tonight" query still included it; "best bars in
+      Guwahati" now includes The Anglers/Maroon Room/Abacus (previously
+      invisible to a generic bar query since they were tagged
+      `live-music`/`clubbing` only, never `lounge-bar`)
+- [x] Full regression pass: restaurants ("cheap cafes"), parks ("parks for
+      boating"), temples ("Kamakhya") all unaffected; confirmed the three
+      dual-listed venues show identical ratings in both files
+
+## Fixed nightlife matching gaps + added review-confidence ranking (2026-09-02)
+- [x] Live testing found "dancing," "clubs" (plural), and "night clubs"
+      (with a space) all failed to match the keyword patterns meant to
+      catch them — confirmed directly with a `node -e` regex test before
+      touching any code. Same bug class as the earlier "cafes"/"bars"
+      plural fixes, just not applied when `venues.js` was rebuilt earlier
+      today. Root cause of three separate-looking symptoms: "dancing"
+      fell back to a stale earlier topic (rock bars) still in the
+      4-message window instead of matching clubs; "night clubs?" matched
+      *something* nightlife-shaped but nothing narrowed it to actual
+      club-type venues, so it fell through to the full 58-venue list
+      sorted by rating regardless of type; "clubs?" alone matched nothing
+      and returned empty
+- [x] Fixed in `venues.js`: `\bdance\b` → `\bdanc(e|es|ing)\b`;
+      `\bclub(bing)?\b` → `\bclub(s|bing)?\b`; `nightclub` →
+      `night\s?clubs?`. While auditing the same two regex tables for the
+      same mistake elsewhere (same practice as prior sessions — fix the
+      whole pattern class, not just the reported instance): also fixed
+      `brewery`/`after-party`/`party` to catch their plurals
+      ("breweries"/"after parties"/"parties" — the last one is an
+      irregular plural `\bparty\b` alone can't catch)
+- [x] Removed Gullu Party House entirely (5.0/5 from only 5 reviews — a
+      genuine outlier; the next-lowest review count in the whole 58-venue
+      set is 26)
+- [x] Added a `reviewCount` field to every venue (from the same source
+      document), and a `confidenceAdjustedScore()` — a simple tiered
+      penalty (not a statistical formula, keeping with this codebase's
+      preference for simple/explainable rules) that discounts a rating
+      backed by fewer than 50 reviews, or none given at all, before
+      ranking — replacing the old plain rating-only sort. This is the
+      "review confidence" principle from the original nightlife research
+      document (a 5.0 from a few reviews shouldn't beat a 4.7 from
+      thousands), now actually implemented rather than just praised when
+      first reviewing that document. Both code-level ranking AND
+      `systemPrompt.js`'s guardrail were updated (per explicit request):
+      `formatVenueList()` now shows review counts inline, and Gemini is
+      told to weigh rating together with review volume in "reply" itself,
+      not just trust whichever number is higher
+- [x] Verified live against a fresh server: "what about dancing?" (asked
+      cold) now returns real club-discotheque venues, not stale rock-bar
+      results; "clubs?" and "night clubs?" both return real club venues
+      instead of empty/wrong-category results; confirmed Gullu Party
+      House never appears in any nightlife result; confirmed the
+      confidence-adjusted ranking correctly stops a thin-review venue
+      (Retrotown, 4.2★/87 reviews) from outranking a well-reviewed one at
+      the same adjusted score (XS Bar & Lounge, 4.1★/1,587 reviews)
+- [x] Regression pass: "I like rock music" still returns all 8 real
+      matches (the earlier same-session fix); restaurants/parks/temples
+      unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

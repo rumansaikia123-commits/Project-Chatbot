@@ -46,7 +46,7 @@ const restaurants = [
     highlight: 'Awarded Best Ethnic Cuisine — Tibetan/Oriental specialties.' },
   // Abacus is also a venues.js nightlife venue — rating/area matched to that entry.
   { name: 'Abacus Brewing Co & Kitchen', area: 'Khanapara, Hotel Palacio, GS Road', cuisines: ['Asian', 'Continental', 'Modern Indian'],
-    costForTwo: 2000, rating: 4.6,
+    costForTwo: 2000, rating: 4.9,
     highlight: 'Craft brewery — reviewers call the live music the best in the city. Also a nightlife pick.',
     address: 'GS Road, Christian Basti, Guwahati, Assam' },
 
@@ -63,12 +63,12 @@ const restaurants = [
     address: 'Dispur, Near Secretariat, Guwahati, Assam' },
   // The Maroon Room is also a venues.js nightlife venue — rating/area matched to that entry.
   { name: 'The Maroon Room', area: 'Dispur', cuisines: ['Japanese', 'Italian', 'Continental'],
-    costForTwo: 2500, rating: 4.9,
+    costForTwo: 2500, rating: 4.6,
     highlight: "Guwahati's only restaurant with live entertainment every night — also a top nightlife pick.",
     address: '4th Floor, Subham Buildwell, GS Rd, Christian Basti, Guwahati, Assam 781006' },
   // Terra Mayaa is also a venues.js nightlife venue — rating/area matched to that entry.
-  { name: 'Terra Mayaa Restaurant And Lounge', area: 'Tarun Nagar, Anil Plaza-II', cuisines: ['Continental', 'Italian', 'Asian'],
-    costForTwo: 1800, rating: 4.1,
+  { name: 'Terra Mayaa Restaurant And Lounge', area: 'Christian Basti, Anil Plaza II', cuisines: ['Continental', 'Italian', 'Asian'],
+    costForTwo: 1800, rating: 4.3,
     highlight: 'Open-air rooftop deck with full bar and panoramic views — also a nightlife pick.',
     address: '6th Floor, Anil Plaza II, GS Road, Christian Basti, Guwahati, Assam' },
 
@@ -421,4 +421,4 @@ function getRelevantRestaurants(message) {
   return sorted.slice(0, TOP_N);
 }
 
-module.exports = { restaurants, getRelevantRestaurants };
+module.exports = { restaurants, getRelevantRestaurants, parseBudgetSignal };
