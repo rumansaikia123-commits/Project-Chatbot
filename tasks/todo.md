@@ -554,6 +554,38 @@ nightlife venues stay as plain text for now.
       stays concise and unaffected; restaurant and nightlife regressions
       unaffected
 
+## Bug fix: the "blend general knowledge" fix introduced a new regression
+- [x] Reported live with a screenshot: "Parks in Guwahati?" correctly got
+      a clarifying question, but the very next message, "Name few parks in
+      Guwahati" (a rephrasing of the same vague request, not an answer to
+      the clarifying question), got a plain-prose list including a place
+      that isn't even a park (Srimanta Sankaradeva Kalakshetra, a cultural
+      complex) instead of asking again — no park cards, and a fabricated
+      "detail" the user rightly flagged as missing
+- [x] Root cause: confirmed both messages match zero real parks at the
+      data layer (both genuinely vague — no activity/area). The previous
+      session's "blend in general knowledge for broad questions" guardrail
+      addition created real tension with the older "ask a clarifying
+      question when the list is empty" instruction — reproduced the
+      failure directly: 1 in 4 local attempts showed the model starting to
+      drift ("While I've asked you to clarify your preferences, some
+      well-known parks you might en...") instead of asking again
+- [x] Fixed in `systemPrompt.js`: added an explicit paragraph clarifying
+      that the "blend general knowledge" guidance ONLY applies when the
+      park list is non-empty, and that an empty list always means "ask a
+      clarifying question, don't list any parks in reply" — including
+      when the visitor rephrases the same vague request rather than
+      actually answering. Also added a direct rule: never name a specific
+      park in "reply" unless it also appears in "parkRecommendations" (the
+      literal mechanism that let a non-existent "park" get mentioned)
+- [x] Verified: 6/6 retries of the exact reported second message now
+      correctly ask a clarifying question instead of listing parks (up
+      from failing on the original 1-in-4 reproduction); reverified the
+      photography/wildlife blending fix from last session still works
+      correctly for the legitimately non-empty case; reverified a narrow
+      real match ("where can I go boating") stays concise; restaurant and
+      nightlife regressions unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
