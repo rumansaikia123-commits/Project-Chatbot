@@ -45,25 +45,38 @@ function addMessageToPage(text, sender) {
   return bubble;
 }
 
+// Which property holds a card's row of labels (cuisines/tags/activities/
+// themes) differs per category — figured out from whichever one is
+// actually present, the same way the meta-row below already tells card
+// types apart by field presence ('deity' in rec, 'entryFee' in rec).
+function getTagField(rec) {
+  if ('cuisines' in rec) return 'cuisines';
+  if ('tags' in rec) return 'tags';
+  if ('activities' in rec) return 'activities';
+  if ('themes' in rec) return 'themes';
+  return null;
+}
+
 // Builds one visual "card" per recommendation (restaurant, nightlife
-// venue, or park), using the structured data the server now sends (name/
-// area/etc. as real fields, not text to parse). Everything here uses
+// venue, park, or temple), using the structured data the server now sends
+// (name/area/etc. as real fields, not text to parse). Everything here uses
 // createElement + textContent rather than innerHTML, so even though this
 // data ultimately passed through the AI, it can never be interpreted as
 // HTML — same safety idea as formatBotReply's escaping, just done a
 // different way since we're building real elements instead of one string.
 //
-// Shared between restaurants (field "cuisines"), nightlife venues (field
-// "tags"), and parks (field "activities") — `tagField` says which
-// property to read for that row of labels, so one function draws all
-// three kinds of card instead of writing near-identical versions of each.
+// Takes a plain list of recommendations — possibly mixed categories, e.g.
+// a temple and its nearby restaurant for the same itinerary day — and
+// figures out each item's card layout and tag field individually, so one
+// function draws every kind of card instead of near-identical versions of
+// each.
 //
 // Parks don't have a rating or a per-two cost the way restaurants/venues
 // do (source data has no star rating, and entry fees are descriptive text
 // like "₹60, free 5-10 AM" rather than a clean number) — recognized by the
 // presence of `entryFee`, and shown as an entry-fee + days-off row instead
 // of the usual rating + cost row.
-function addRecommendationCards(recommendations, tagField) {
+function addRecommendationCards(recommendations) {
   if (!recommendations || recommendations.length === 0) return;
 
   const container = document.createElement('div');
@@ -81,7 +94,26 @@ function addRecommendationCards(recommendations, tagField) {
     const meta = document.createElement('div');
     meta.className = 'rec-meta';
 
-    if ('entryFee' in rec) {
+    if ('deity' in rec) {
+      const deity = document.createElement('span');
+      deity.className = 'rec-rating';
+      deity.textContent = rec.deity;
+      meta.appendChild(deity);
+
+      if (rec.timings) {
+        const timings = document.createElement('span');
+        timings.className = 'rec-cost';
+        timings.textContent = rec.timings;
+        meta.appendChild(timings);
+      }
+
+      if (rec.dressCode) {
+        const dressCode = document.createElement('span');
+        dressCode.className = 'rec-cost';
+        dressCode.textContent = rec.dressCode;
+        meta.appendChild(dressCode);
+      }
+    } else if ('entryFee' in rec) {
       const entryFee = document.createElement('span');
       entryFee.className = 'rec-cost';
       entryFee.textContent = rec.entryFee;
@@ -110,7 +142,8 @@ function addRecommendationCards(recommendations, tagField) {
     area.textContent = rec.area;
     card.appendChild(area);
 
-    const tags = rec[tagField];
+    const tagField = getTagField(rec);
+    const tags = tagField ? rec[tagField] : null;
     if (tags && tags.length > 0) {
       const tagsEl = document.createElement('div');
       tagsEl.className = 'rec-cuisines';
@@ -130,6 +163,53 @@ function addRecommendationCards(recommendations, tagField) {
 
   messagesEl.appendChild(container);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addDayHeading(day) {
+  const heading = document.createElement('div');
+  heading.className = 'day-heading';
+  heading.textContent = `Day ${day}`;
+  messagesEl.appendChild(heading);
+}
+
+// Renders every recommendation the server returned. Most questions aren't
+// itineraries, so the common path is unchanged: four separate card groups
+// (temple, restaurant, nightlife, park), each visually clustered on its
+// own — this keeps a compound question like "restaurants and bars in
+// Guwahati" showing two clearly distinct clusters instead of one
+// undifferentiated list. Only when the server actually tagged a multi-day
+// itinerary (any recommendation has a non-null `day`) do we switch to
+// grouping every category together under "Day N" headings instead, since
+// at that point the day itself is the meaningful grouping, not the category.
+function renderRecommendations(data) {
+  // Temple first so it visually anchors that day's food picks, the way a
+  // real itinerary reads ("visit the temple, then eat nearby").
+  const categories = [
+    data.templeRecommendations,
+    data.restaurantRecommendations,
+    data.nightlifeRecommendations,
+    data.parkRecommendations,
+  ];
+  const all = categories.flat();
+  const isItinerary = all.some((rec) => rec.day != null);
+
+  if (!isItinerary) {
+    for (const recommendations of categories) {
+      addRecommendationCards(recommendations);
+    }
+    return;
+  }
+
+  const days = [...new Set(all.filter((rec) => rec.day != null).map((rec) => rec.day))].sort((a, b) => a - b);
+  for (const day of days) {
+    addDayHeading(day);
+    addRecommendationCards(all.filter((rec) => rec.day === day));
+  }
+
+  // Safety net: anything left untagged (shouldn't normally happen once the
+  // model commits to itinerary mode) still gets shown, just without a day heading.
+  const untagged = all.filter((rec) => rec.day == null);
+  if (untagged.length > 0) addRecommendationCards(untagged);
 }
 
 formEl.addEventListener('submit', async (event) => {
@@ -163,9 +243,7 @@ formEl.addEventListener('submit', async (event) => {
 
     thinkingBubble.remove();
     addMessageToPage(data.reply, 'bot');
-    addRecommendationCards(data.restaurantRecommendations, 'cuisines');
-    addRecommendationCards(data.nightlifeRecommendations, 'tags');
-    addRecommendationCards(data.parkRecommendations, 'activities');
+    renderRecommendations(data);
     conversation.push({ role: 'assistant', content: data.reply });
   } catch (error) {
     thinkingBubble.remove();

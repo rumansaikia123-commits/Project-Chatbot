@@ -10,6 +10,7 @@ const buildSystemPrompt = require('./systemPrompt');
 const { getRelevantVenues } = require('./venues');
 const { getRelevantRestaurants } = require('./restaurants');
 const { getRelevantParks } = require('./parks');
+const { getRelevantTemples } = require('./temples');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -41,8 +42,11 @@ const CHAT_RESPONSE_SCHEMA = {
           rating: { type: Type.NUMBER },
           costForTwo: { type: Type.NUMBER, nullable: true },
           highlight: { type: Type.STRING },
+          // Nullable: only set for a multi-day itinerary (2+ days), so the
+          // frontend can group cards by day. Null for a normal question.
+          day: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'cuisines', 'rating', 'highlight'],
+        required: ['name', 'area', 'cuisines', 'rating', 'highlight', 'day'],
       },
     },
     nightlifeRecommendations: {
@@ -60,8 +64,9 @@ const CHAT_RESPONSE_SCHEMA = {
           rating: { type: Type.NUMBER, nullable: true },
           costForTwo: { type: Type.NUMBER, nullable: true },
           highlight: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'tags', 'rating', 'costForTwo', 'highlight'],
+        required: ['name', 'area', 'tags', 'rating', 'costForTwo', 'highlight', 'day'],
       },
     },
     parkRecommendations: {
@@ -81,12 +86,34 @@ const CHAT_RESPONSE_SCHEMA = {
           daysOff: { type: Type.STRING },
           entryFee: { type: Type.STRING },
           highlight: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'activities', 'daysOff', 'entryFee', 'highlight'],
+        required: ['name', 'area', 'activities', 'daysOff', 'entryFee', 'highlight', 'day'],
+      },
+    },
+    templeRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Temples being recommended in this reply. Empty if this reply is not recommending temples. The fuller history/mythology/spiritual-significance story belongs in "reply", not here — these fields are just the compact card facts.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          deity: { type: Type.STRING },
+          themes: { type: Type.ARRAY, items: { type: Type.STRING } },
+          // Nullable: not every temple in the source data has a stable,
+          // verified timetable or a documented dress code.
+          timings: { type: Type.STRING, nullable: true },
+          dressCode: { type: Type.STRING, nullable: true },
+          highlight: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
+        },
+        required: ['name', 'area', 'deity', 'themes', 'highlight', 'day'],
       },
     },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations'],
 };
 
 const app = express();
@@ -168,8 +195,17 @@ app.post('/api/chat', async (req, res) => {
       .map((message) => message.content)
       .join(' ');
     const relevantVenues = getRelevantVenues(allVisitorText);
-    const relevantRestaurants = getRelevantRestaurants(allVisitorText);
     const relevantParks = getRelevantParks(allVisitorText);
+    const relevantTemples = getRelevantTemples(allVisitorText);
+    // Temples' own area names (hill/locality) are folded into the text
+    // restaurants.js sees, purely so its existing area-keyword matching can
+    // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
+    // Bazar") — this never invents proximity data, it just makes sure a
+    // real match isn't crowded out of the top-rated fallback by unrelated,
+    // higher-rated restaurants. No new data, no changes to restaurants.js.
+    const relevantRestaurants = getRelevantRestaurants(
+      `${allVisitorText} ${relevantTemples.map((t) => t.area).join(' ')}`
+    );
 
     const response = await ai.models.generateContent({
       // gemini-3.6-flash does an invisible "thinking" step that was eating
@@ -179,7 +215,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples),
         maxOutputTokens: 2048,
         // Without this, the model's default randomness made it ignore real,
         // correctly-provided venue/restaurant data surprisingly often —
@@ -206,7 +242,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [] };
     }
 
     res.json({
@@ -214,6 +250,7 @@ app.post('/api/chat', async (req, res) => {
       restaurantRecommendations: parsed.restaurantRecommendations,
       nightlifeRecommendations: parsed.nightlifeRecommendations,
       parkRecommendations: parsed.parkRecommendations,
+      templeRecommendations: parsed.templeRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

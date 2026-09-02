@@ -127,6 +127,19 @@ body {
   gap: 10px;
 }
 
+/* Groups a multi-day itinerary's cards under a "Day N" label instead of
+   the usual per-category clustering — only used when the AI actually
+   tagged recommendations with a day number. */
+.day-heading {
+  font-family: "Playfair Display", serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--gold);
+  margin-top: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
 .recommendation-card {
   padding: 14px 16px;
   border-radius: 12px;

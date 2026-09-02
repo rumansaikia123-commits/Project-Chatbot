@@ -586,6 +586,164 @@ nightlife venues stay as plain text for now.
       real match ("where can I go boating") stays concise; restaurant and
       nightlife regressions unaffected
 
+## Added a fifth category: temples (structured cards + paraphrased narrative)
+- [x] User supplied a real, pre-researched source document ("Guwahati &
+      Around — Temple & Sacred-Site Research Guide," Sept 2026) — 20
+      temples across 3 tiers, cross-checked against Government of
+      Assam/Assam Tourism/Incredible India sources, with history,
+      mythology, and spiritual significance already kept as separate,
+      clearly-labeled fields and an explicit rule never to invent hours/
+      fees/booking rules/dress restrictions. No independent research phase
+      was needed — the work was faithful transcription into the existing
+      architecture, not new research
+- [x] Deliberate architecture decision, different from the other three
+      categories: the fuller history/mythology/spiritual-significance text
+      lives only in `temples.js` and `systemPrompt.js`'s grounding text —
+      it's never part of `CHAT_RESPONSE_SCHEMA` and never reaches the
+      browser. Gemini is explicitly allowed (encouraged) to paraphrase it
+      into "reply" in its own natural voice, unlike the "copy exactly"
+      rule that governs every other structured field, including the
+      temple's own card facts (name/area/deity/timings/dress code)
+- [x] Kept `historicalSignificance`/`mythologicalSignificance`/
+      `spiritualSignificance` as three separate fields (not one blended
+      "history" string) specifically to preserve the source document's own
+      fact-vs-tradition distinction — mythological claims are phrased as
+      "tradition says"/"devotees believe" in the source, and the
+      guardrail in `systemPrompt.js` requires that framing survive
+      paraphrasing rather than being flattened into stated fact
+- [x] Built `temples.js` — `getRelevantTemples()` matches by temple/deity
+      name, theme (shakta/shaiva/vaishnava/tantric/navagraha/archaeology/
+      hilltop/riverside/pilgrimage/hajo/north-guwahati/etc.), and area,
+      mirroring the restaurants.js/parks.js keyword-table pattern. A named
+      temple/deity always narrows to just that match; a vague temple
+      question with no name/theme/area falls back to the 6 Tier-1 temples
+      (Kamakhya, Umananda, Basistha, Navagraha, Ugratara, Sukreswar)
+      rather than dumping all 20 — using the source doc's own tier ranking
+      as the prominence signal, the same role `rating` plays in
+      restaurants.js's top-N fallback. No `entryFee` field: none of the 20
+      source entries specify one, and inventing "Free" would violate the
+      source's own no-fabrication rule
+- [x] `server.js`: added `templeRecommendations` to `CHAT_RESPONSE_SCHEMA`
+      (name/area/deity/themes/timings/dressCode/highlight — `tier` is
+      internal-only, used for the fallback above, never sent to Gemini or
+      the browser), wired `getRelevantTemples(allVisitorText)` alongside
+      the other three, threaded through `buildSystemPrompt` and `res.json`
+- [x] `systemPrompt.js`: added `formatTempleList()` (includes the full
+      narrative text per temple as grounding) and a guardrail paragraph
+      requiring: card facts copied exactly; never invent hours/fees/
+      booking/dress rules — pass along "verify locally" honesty instead of
+      presenting a firm schedule; narrative content paraphrased, not
+      recited, with the tradition/fact framing preserved; genuine
+      reverence, no casual tone. Also narrowed the pre-existing parks-era
+      sentence that let Gemini mention "temples" from general knowledge
+      for broad sightseeing questions — now temples only ever come from
+      the verified list
+- [x] `public/script.js`: added a `'deity' in rec` branch in
+      `addRecommendationCards` (checked before the pre-existing
+      `'entryFee' in rec` park branch, so parks are unaffected) showing
+      deity/timings/dress code, plus one new
+      `addRecommendationCards(data.templeRecommendations, 'themes')` call.
+      No CSS changes needed — confirmed by reading `style.css` directly:
+      cards have no fixed height/truncation
+- [x] Verified matching logic directly via `getRelevantTemples()`: named
+      temple ("Kamakhya") → exactly that one; vague ("temples in
+      Guwahati?") → the 6 Tier-1 temples only; theme queries (pilgrimage,
+      hilltop, tantric) → correct real subsets; Hajo-area query → the two
+      real Hajo temples; non-temple control → empty
+- [x] Verified live against a real running server: the Kamakhya query
+      produced a warm, accurate, paraphrased reply that kept "According to
+      Shakta tradition"/"though this sacred narrative belongs to
+      spiritual tradition rather than archaeological record" framing
+      intact rather than stating the Sati legend as fact, and honestly
+      passed along the "verify same-day" timing caveat; the card fields
+      matched `temples.js` exactly. Re-verified the same fact/tradition
+      care on Ugratara (the other major Tantric/Shakta site) — reply
+      preserved "popular tradition connects..." framing and honestly
+      relayed "no stable official timetable, verify locally" rather than
+      inventing hours
+- [x] Verified the vague-question fallback live: "temples in Guwahati?"
+      returned exactly the 6 Tier-1 temples, not all 20
+- [x] Verified a mixed query ("temples and restaurants near Pan Bazar")
+      populated both `templeRecommendations` (Sukreswar Temple, correctly
+      area-matched) and `restaurantRecommendations` independently
+- [x] Full regression pass against the live server: nightlife ("best
+      rooftop bars"), restaurants ("cheap cafes"), parks ("parks for
+      boating," narrow match), and the vague-park clarifying-question
+      behavior ("tell me about parks in Guwahati" → 0 park matches, a real
+      clarifying question, not a list) — all unaffected by the new category
+
+## Day-grouped itineraries, honest nearby-matching, shorter replies (2026-09-02)
+- [x] Live-tested the new temples feature with a real 3-day itinerary
+      request and found three real gaps: the reply blended all 3 days into
+      one dense paragraph; cards rendered as "all restaurant cards, then
+      all temple cards" instead of grouped by day; and the "nearby"
+      restaurants weren't actually nearby — checking the data, only
+      Umananda/Ugratara (Uzan Bazar), ISKCON (Ulubari), and the Sai Baba
+      Temple (Six Mile) share a real locality with any restaurants.js
+      entry; the other 16 temples, including the most-requested ones
+      (Kamakhya, Basistha, Navagraha, Sukreswar), have no genuinely close
+      match in the current data
+- [x] User explicitly chose: be upfront when there's no real nearby match,
+      offer a good pick elsewhere in the city instead of implying
+      proximity — no new research pass to invent/find real nearby options
+- [x] `server.js`: reordered so `relevantTemples` is computed before
+      `relevantRestaurants`, then the matched temples' `area` strings are
+      appended to the text passed into `getRelevantRestaurants` — this
+      makes restaurants.js's own existing area-keyword matching pick up a
+      genuine overlap (e.g. "Uzan Bazar" appearing in both) so it isn't
+      crowded out of the top-10-by-rating fallback by unrelated,
+      higher-rated restaurants. No new mapping table, no changes to
+      restaurants.js itself
+- [x] Added a nullable `day` (NUMBER) field to all four
+      `CHAT_RESPONSE_SCHEMA` item shapes (restaurant/nightlife/park/
+      temple), nullable-but-required (matching nightlife's existing
+      rating/costForTwo pattern) so Gemini must consciously emit a day
+      number or null rather than silently omitting the field
+- [x] `systemPrompt.js`: added instructions for (a) structuring "reply"
+      with a short "Day 1:"/"Day 2:" line per day instead of one dense
+      paragraph, for itineraries spanning 2+ days only; (b) only
+      describing a restaurant as "near"/"close to" a temple when their
+      listed areas genuinely coincide, otherwise presenting it honestly as
+      a good option elsewhere in the city; (c) tagging every recommendation
+      with a `day` number that must exactly match the "Day N:" lines in
+      reply, left null for single-day/non-itinerary questions
+- [x] `public/script.js`: generalized `addRecommendationCards` to
+      auto-detect each item's tag field (cuisines/tags/activities/themes)
+      by field presence instead of taking a fixed parameter, the same
+      per-item discrimination the meta-row rendering already used for
+      `'deity' in rec`/`'entryFee' in rec`. Added `renderRecommendations()`:
+      for a normal (non-itinerary) response, renders the same 4 separate
+      category-clustered card groups as before (just temple-first instead
+      of restaurant-first) — deliberately did NOT merge them into one
+      list, since that would collapse the existing visual distinction
+      between e.g. a compound "restaurants and bars" query's two clusters.
+      Only when any recommendation actually carries a non-null `day` does
+      it switch to grouping every category together under "Day N" headings
+- [x] `public/style.css`: added `.day-heading`, reusing existing gold/
+      glass-border theme tokens
+- [x] Design reviewed before implementation — caught that an earlier draft
+      would have merged all 4 categories into one card list even for
+      normal non-itinerary questions, which would have been a real visual
+      regression for compound category queries; fixed to only merge/group
+      when day-tagging is actually in use
+- [x] Verified live against a fresh server process with the exact
+      originally-reported request ("3 days in Guwahati, temples +
+      breakfast/lunch"): reply came back as clean Day 1/Day 2/Day 3 lines;
+      Kamakhya (Day 1, no genuine nearby match) correctly said food was "a
+      short ride away" rather than implying proximity; Ugratara (Day 3,
+      genuine Uzan Bazar match with Cafe Karma) correctly said "just steps
+      away"; every temple/restaurant's `day` field matched exactly where
+      it was described in the reply text
+- [x] Verified a single-day ask keeps `day: null` on everything (no
+      spurious "Day 1" heading); verified "tell me about Kamakhya temple"
+      alone still returns `day: null` (unaffected by this change);
+      verified a non-itinerary compound query ("restaurants and bars in
+      Guwahati") returns both categories with `day: null`, preserving the
+      existing two-cluster rendering
+- [x] Full regression pass: nightlife ("best rooftop bars"), restaurants
+      ("cheap cafes"), parks ("parks for boating" narrow match, and the
+      vague-park clarifying-question behavior) — all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
