@@ -9,6 +9,7 @@ const { GoogleGenAI, Type } = require('@google/genai');
 const buildSystemPrompt = require('./systemPrompt');
 const { getRelevantVenues } = require('./venues');
 const { getRelevantRestaurants } = require('./restaurants');
+const { getRelevantParks } = require('./parks');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -63,8 +64,29 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'tags', 'rating', 'costForTwo', 'highlight'],
       },
     },
+    parkRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Parks being recommended in this reply. Empty if this reply is not recommending parks.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          // Parks have no star rating or clean numeric cost in the source
+          // data (entry fees include free-entry windows and concessions
+          // that don't collapse into a single number), so unlike
+          // restaurants/nightlife there's no rating/costForTwo here.
+          daysOff: { type: Type.STRING },
+          entryFee: { type: Type.STRING },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'activities', 'daysOff', 'entryFee', 'highlight'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations'],
 };
 
 const app = express();
@@ -147,6 +169,7 @@ app.post('/api/chat', async (req, res) => {
       .join(' ');
     const relevantVenues = getRelevantVenues(allVisitorText);
     const relevantRestaurants = getRelevantRestaurants(allVisitorText);
+    const relevantParks = getRelevantParks(allVisitorText);
 
     const response = await ai.models.generateContent({
       // gemini-3.6-flash does an invisible "thinking" step that was eating
@@ -156,7 +179,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks),
         maxOutputTokens: 2048,
         // Without this, the model's default randomness made it ignore real,
         // correctly-provided venue/restaurant data surprisingly often —
@@ -183,13 +206,14 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [] };
     }
 
     res.json({
       reply: parsed.reply,
       restaurantRecommendations: parsed.restaurantRecommendations,
       nightlifeRecommendations: parsed.nightlifeRecommendations,
+      parkRecommendations: parsed.parkRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

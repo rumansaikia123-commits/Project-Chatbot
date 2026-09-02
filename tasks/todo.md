@@ -478,6 +478,54 @@ nightlife venues stay as plain text for now.
       matching. Documented as a reason to prioritize it, not a reason to
       skip this fix
 
+## Added a fourth category: parks (structured, activity-matched)
+- [x] Compiled all 17 real Guwahati parks from `guwahati_parks_directory_v2.pdf`
+      into `parks.js`, following the exact restaurants.js/venues.js
+      pattern: name, area, activities (canonical tags derived from the
+      PDF's "Used For" column), daysOff, entryFee, highlight
+- [x] Two deliberate schema differences from restaurants/nightlife, since
+      the source data doesn't support them: no `rating` field at all (no
+      star ratings in the PDF), and `entryFee` stays a descriptive string
+      rather than a clean number (real entries have free-entry time
+      windows and senior/child exemptions that a bare number would lose)
+- [x] Built `getRelevantParks()` — matches by activity (boating, walking,
+      jogging, birdwatching, photography, sunset, river-view, heritage,
+      etc.) and area, same AND-combining approach as restaurants; added a
+      dedicated "open every day" filter (`daysOff === 'None'`) since that
+      was one of the user's explicit example queries, not left to chance
+- [x] `server.js`: added `parkRecommendations` as a fourth array to
+      `CHAT_RESPONSE_SCHEMA` (no rating/costForTwo fields, matching the
+      data); wired `getRelevantParks(allVisitorText)` alongside the other
+      two categories
+- [x] `systemPrompt.js`: `formatParkList()` + a guardrail paragraph
+      mirroring the existing pattern, with one addition — explicitly tells
+      Gemini not to invent or apologize for a missing rating, since parks
+      genuinely don't have one; vague park questions ("tell me about
+      parks") get a clarifying question instead of a rating-less top-N
+      dump, since there's no rating to sort a "top rated" fallback by
+- [x] `public/script.js`: generalized `addRecommendationCards` to detect
+      `entryFee` on a recommendation and show an entry-fee + open/closed-day
+      row instead of the usual rating + cost row, rather than writing a
+      separate near-duplicate render function
+- [x] Verified with direct `getRelevantParks()` calls: "where can I go
+      boating" → Dighalipukhuri Park only; "good for photography" →
+      Brahmaputra Riverfront Park + Jor Pukhuri Park; "which parks are
+      open every day" → exactly the 10 real `daysOff: 'None'` parks;
+      "boating and open every day" → still just Dighalipukhuri Park
+      (satisfies both); non-park control → empty
+- [x] Verified live: boating and open-every-day queries return correct
+      real park data; a vague "tell me about parks" question correctly
+      asks a clarifying question instead of guessing; restaurant and
+      nightlife regressions unaffected; a compound "lunch and a park for a
+      walk afterward" question correctly returns real data in both
+      restaurantRecommendations and parkRecommendations in one response
+- [x] Verified visually with a real headless-browser screenshot: 10 park
+      cards render cleanly with no rating shown (branches to the
+      entry-fee/days-off layout instead), zero console errors. Minor
+      cosmetic note, not a bug: on cards with a long entry-fee description,
+      the fee text wraps to two lines while "open daily" sits to the
+      right, slightly asymmetric but fully readable
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

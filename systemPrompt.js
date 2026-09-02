@@ -52,10 +52,18 @@ function formatRestaurantList(restaurants) {
     .join('\n');
 }
 
+// Turns a list of matched parks (from parks.js) into a text block for the prompt.
+function formatParkList(parks) {
+  if (parks.length === 0) return '(none relevant to this question)';
+  return parks
+    .map((p) => `- ${p.name} (${p.area}) [${p.activities.join(', ')}] days off: ${p.daysOff}, entry: ${p.entryFee}: ${p.highlight}`)
+    .join('\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
-// venues, and any restaurants relevant to the visitor's latest message
+// venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -89,13 +97,14 @@ itinerary you just gave, "somewhere cheaper" refines your last suggestion).
 Use the earlier messages to keep your answers connected and coherent, the way
 a real local guide would in an ongoing conversation.
 
-Your response has three parts: "reply", "restaurantRecommendations", and
-"nightlifeRecommendations". Write "reply" as you normally would — natural,
-warm prose for greetings, itinerary advice, and clarifying questions.
-When recommending restaurants or nightlife venues specifically, keep
-"reply" to a brief, natural lead-in (e.g. "Here are a few great options for
-you:") rather than describing each one in the text — the actual details
-belong in the matching array instead, described further below.
+Your response has four parts: "reply", "restaurantRecommendations",
+"nightlifeRecommendations", and "parkRecommendations". Write "reply" as you
+normally would — natural, warm prose for greetings, itinerary advice, and
+clarifying questions. When recommending restaurants, nightlife venues, or
+parks specifically, keep "reply" to a brief, natural lead-in (e.g. "Here
+are a few great options for you:") rather than describing each one in the
+text — the actual details belong in the matching array instead, described
+further below.
 
 Below is curated local knowledge, kept current by the person who runs this
 chatbot. Treat it as more trustworthy and up-to-date than your own general
@@ -170,7 +179,29 @@ that are genuinely unrelated to Guwahati, not for on-topic food questions
 that simply came up empty. This does not affect the separate nightlife
 list above in any way:
 
-${formatRestaurantList(relevantRestaurants)}`;
+${formatRestaurantList(relevantRestaurants)}
+
+If a visitor asks about parks — including specific activities like
+boating, walking, jogging, birdwatching, photography, sunset views, river
+views, or asks which parks are open every day — here are the ONLY parks
+you may put in "parkRecommendations" — do not include any other park or
+garden from your own general knowledge, even if you believe it's real,
+since we can only vouch for the accuracy of this specific, hand-verified
+list. For each one you include, copy its name, area, activities, days off,
+and entry fee exactly as given below — don't alter them. Parks have no
+star rating, so don't invent one or apologize for its absence. If a
+visitor's park question is broad (e.g. "tell me about parks in Guwahati")
+with no specific activity or area mentioned, ask a brief, friendly
+clarifying question about what kind of park experience they're after
+(a riverside walk, boating, history, a place for kids, etc.) instead of
+guessing — this list is deliberately empty in that case. If THIS PARK list
+below is empty for a specific request, it means either the question wasn't
+about parks, or it was too vague to narrow down — leave
+"parkRecommendations" empty either way, and don't bring up parks
+unprompted. This does not affect the separate restaurant or nightlife
+lists above in any way:
+
+${formatParkList(relevantParks)}`;
 }
 
 module.exports = buildSystemPrompt;

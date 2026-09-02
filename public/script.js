@@ -45,18 +45,24 @@ function addMessageToPage(text, sender) {
   return bubble;
 }
 
-// Builds one visual "card" per recommendation (restaurant or nightlife
-// venue), using the structured data the server now sends (name/area/
-// rating/etc. as real fields, not text to parse). Everything here uses
+// Builds one visual "card" per recommendation (restaurant, nightlife
+// venue, or park), using the structured data the server now sends (name/
+// area/etc. as real fields, not text to parse). Everything here uses
 // createElement + textContent rather than innerHTML, so even though this
 // data ultimately passed through the AI, it can never be interpreted as
 // HTML — same safety idea as formatBotReply's escaping, just done a
 // different way since we're building real elements instead of one string.
 //
-// Shared between restaurants (which call the field "cuisines") and
-// nightlife venues (which call it "tags") — `tagField` says which
-// property to read for that row of labels, so the same function draws
-// both kinds of card instead of writing two near-identical versions.
+// Shared between restaurants (field "cuisines"), nightlife venues (field
+// "tags"), and parks (field "activities") — `tagField` says which
+// property to read for that row of labels, so one function draws all
+// three kinds of card instead of writing near-identical versions of each.
+//
+// Parks don't have a rating or a per-two cost the way restaurants/venues
+// do (source data has no star rating, and entry fees are descriptive text
+// like "₹60, free 5-10 AM" rather than a clean number) — recognized by the
+// presence of `entryFee`, and shown as an entry-fee + days-off row instead
+// of the usual rating + cost row.
 function addRecommendationCards(recommendations, tagField) {
   if (!recommendations || recommendations.length === 0) return;
 
@@ -75,15 +81,27 @@ function addRecommendationCards(recommendations, tagField) {
     const meta = document.createElement('div');
     meta.className = 'rec-meta';
 
-    const rating = document.createElement('span');
-    rating.className = 'rec-rating';
-    rating.textContent = rec.rating != null ? `★ ${rec.rating}` : 'unrated';
-    meta.appendChild(rating);
+    if ('entryFee' in rec) {
+      const entryFee = document.createElement('span');
+      entryFee.className = 'rec-cost';
+      entryFee.textContent = rec.entryFee;
+      meta.appendChild(entryFee);
 
-    const cost = document.createElement('span');
-    cost.className = 'rec-cost';
-    cost.textContent = rec.costForTwo != null ? `~₹${rec.costForTwo} for two` : 'price not listed';
-    meta.appendChild(cost);
+      const daysOff = document.createElement('span');
+      daysOff.className = 'rec-cost';
+      daysOff.textContent = rec.daysOff === 'None' ? 'open daily' : `closed ${rec.daysOff}`;
+      meta.appendChild(daysOff);
+    } else {
+      const rating = document.createElement('span');
+      rating.className = 'rec-rating';
+      rating.textContent = rec.rating != null ? `★ ${rec.rating}` : 'unrated';
+      meta.appendChild(rating);
+
+      const cost = document.createElement('span');
+      cost.className = 'rec-cost';
+      cost.textContent = rec.costForTwo != null ? `~₹${rec.costForTwo} for two` : 'price not listed';
+      meta.appendChild(cost);
+    }
 
     card.appendChild(meta);
 
@@ -147,6 +165,7 @@ formEl.addEventListener('submit', async (event) => {
     addMessageToPage(data.reply, 'bot');
     addRecommendationCards(data.restaurantRecommendations, 'cuisines');
     addRecommendationCards(data.nightlifeRecommendations, 'tags');
+    addRecommendationCards(data.parkRecommendations, 'activities');
     conversation.push({ role: 'assistant', content: data.reply });
   } catch (error) {
     thinkingBubble.remove();
