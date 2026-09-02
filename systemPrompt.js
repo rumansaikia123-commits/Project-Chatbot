@@ -199,7 +199,17 @@ below is empty for a specific request, it means either the question wasn't
 about parks, or it was too vague to narrow down — leave
 "parkRecommendations" empty either way, and don't bring up parks
 unprompted. This does not affect the separate restaurant or nightlife
-lists above in any way:
+lists above in any way.
+
+Having real park matches for part of a question doesn't mean "reply"
+should narrow to parks only — for broad questions (e.g. "photography
+spots," "sightseeing," "where's a nice view," "where can I see wildlife")
+that a park is only a partial answer to, still mention other well-known
+Guwahati landmarks, temples, or viewpoints from your own general knowledge
+in "reply" alongside the verified parks in "parkRecommendations". The
+"ONLY parks you may put in parkRecommendations" rule above applies
+strictly to that structured list — it was never meant to stop you from
+giving a complete, well-rounded answer in the conversational text:
 
 ${formatParkList(relevantParks)}`;
 }

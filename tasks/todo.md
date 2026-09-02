@@ -526,6 +526,34 @@ nightlife venues stay as plain text for now.
       the fee text wraps to two lines while "open daily" sits to the
       right, slightly asymmetric but fully readable
 
+## Bug fix: park matches crowded out general sightseeing knowledge
+- [x] Reported live: "Where can I go for photography in Guwahati?" only
+      mentioned two parks, no Kamakhya Temple or other well-known
+      photography spots. Confirmed via direct testing this reproduces on a
+      completely fresh message (not caused by earlier park conversation) —
+      "photography" is simply one of `parks.js`'s activity keywords, so it
+      correctly matches real park data every time. The actual gap: nothing
+      restricted "reply" to park-only content, but the model stopped
+      volunteering anything else once given real verified park data
+- [x] Fixed in `systemPrompt.js`: added an explicit instruction that
+      having real park matches for part of a question doesn't mean "reply"
+      should narrow to parks only — for broad questions, the model should
+      still blend in general knowledge (temples, viewpoints, etc.)
+      alongside the verified parks. Deliberately general, not hardcoded to
+      photography specifically, per direct confirmation this should apply
+      to any activity (wildlife, heritage, sunset, etc.), not just one
+- [x] Found and fixed a related, separate gap while discussing this:
+      "wildlife" matched nothing at all in `parks.js` (only "birdwatching"
+      existed, from Jor Pukhuri Park's turtle/swan habitat, but "wildlife"
+      was never mapped to it). Added as a synonym on the same keyword row
+- [x] Verified live: the exact reported photography question now mentions
+      Kamakhya Temple and a river cruise alongside the two real park
+      cards; "where can I see wildlife" now correctly matches Jor Pukhuri
+      Park (previously zero matches) and the reply also mentions the Assam
+      State Zoo; a narrow park-only question ("where can I go boating")
+      stays concise and unaffected; restaurant and nightlife regressions
+      unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

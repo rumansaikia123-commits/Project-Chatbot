@@ -89,7 +89,7 @@ const ACTIVITY_KEYWORDS = [
   { pattern: /\bjog(ging|s)?\b|\brunning\b|\bexercise\b/, activity: 'jogging' },
   { pattern: /\bboat(ing|s)?\b|paddle\s?boat/, activity: 'boating' },
   { pattern: /\bphoto(s|graphy|graph)?\b/, activity: 'photography' },
-  { pattern: /\bbird(s|watching)?\b/, activity: 'birdwatching' },
+  { pattern: /\bbird(s|watching)?\b|\bwildlife\b/, activity: 'birdwatching' },
   { pattern: /\bsunset\b/, activity: 'sunset' },
   { pattern: /\briver\s?view\b|\briverside\b|\bbrahmaputra\b/, activity: 'river-view' },
   { pattern: /panoramic|city\s?view/, activity: 'panoramic-view' },
