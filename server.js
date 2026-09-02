@@ -12,6 +12,7 @@ const { getRelevantRestaurants } = require('./restaurants');
 const { getRelevantParks } = require('./parks');
 const { getRelevantTemples } = require('./temples');
 const { getRelevantCinemas } = require('./cinemas');
+const { getRelevantShops } = require('./shops');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -130,8 +131,26 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'bestFor', 'highlight', 'tip', 'day'],
       },
     },
+    shopRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Shopping destinations (malls, markets, or the GS Road corridor) being recommended in this reply. Empty if this reply is not recommending shopping destinations.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+          bestFor: { type: Type.STRING },
+          highlight: { type: Type.STRING },
+          tip: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
+        },
+        required: ['name', 'area', 'tags', 'bestFor', 'highlight', 'tip', 'day'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations'],
 };
 
 const app = express();
@@ -216,6 +235,7 @@ app.post('/api/chat', async (req, res) => {
     const relevantParks = getRelevantParks(allVisitorText);
     const relevantTemples = getRelevantTemples(allVisitorText);
     const relevantCinemas = getRelevantCinemas(allVisitorText);
+    const relevantShops = getRelevantShops(allVisitorText);
     // Temples' own area names (hill/locality) are folded into the text
     // restaurants.js sees, purely so its existing area-keyword matching can
     // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
@@ -234,8 +254,16 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas),
-        maxOutputTokens: 2048,
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops),
+        // Raised from 2048: a broad "market" question now returns all 16
+        // real market entries with full text fields, which needs ~2,400
+        // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON
+        // and Gemini's fallback behavior nested a malformed, truncated
+        // copy of the whole response inside the "reply" string instead of
+        // filling the real shopRecommendations array — confirmed directly
+        // via response.candidates[0].finishReason. 4096 leaves real
+        // headroom (measured usage: ~2,400 tokens for this exact case).
+        maxOutputTokens: 4096,
         // Without this, the model's default randomness made it ignore real,
         // correctly-provided venue/restaurant data surprisingly often —
         // e.g. claiming "no bars on hand" despite 15 being listed right in
@@ -261,7 +289,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [] };
     }
 
     res.json({
@@ -271,6 +299,7 @@ app.post('/api/chat', async (req, res) => {
       parkRecommendations: parsed.parkRecommendations,
       templeRecommendations: parsed.templeRecommendations,
       cinemaRecommendations: parsed.cinemaRecommendations,
+      shopRecommendations: parsed.shopRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

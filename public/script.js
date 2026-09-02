@@ -202,6 +202,7 @@ function renderRecommendations(data) {
     data.nightlifeRecommendations,
     data.parkRecommendations,
     data.cinemaRecommendations,
+    data.shopRecommendations,
   ];
   const all = categories.flat();
   const isItinerary = all.some((rec) => rec.day != null);

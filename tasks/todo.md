@@ -938,6 +938,79 @@ nightlife venues stay as plain text for now.
 - [x] Full regression pass: temples, restaurants, nightlife (rock music
       query), and parks all unaffected
 
+## Added a seventh category: shopping (2026-09-03)
+- [x] User shared a Guwahati shopping research document (24 malls/markets,
+      Tier 1-3) and, after review, gave a detailed scoping conversation
+      (5+ rounds) that landed on a genuinely different design from
+      cinemas.js: unlike the cinema doc's messy Type column (dropped
+      entirely), this document's Type column turned out to be clean
+      enough to reliably bucket by hand — every value contains "mall" or
+      defaults to "market", with one deliberate exception. Confirmed
+      explicitly: mall vs. market is a real distinction visitors care
+      about (unlike cinema "premium vs local"), so it was kept, not dropped
+- [x] Final agreed design: every shop gets exactly one `category` — `mall`,
+      `market`, or `corridor` (GS Road Shopping Corridor only — a long
+      commercial strip of many separate shops/showrooms, explicitly not
+      folded into "mall" per the user's correction). A handful of market
+      entries also carry a specific `keyword` for niche searches: Pan
+      Bazaar (books — while still being a full general market like Fancy
+      Bazaar, not book-only, per explicit correction), NEDFi Haat
+      (craft), Purbashree Emporium (handloom), Pragjyotika Assam Emporium
+      (government-emporium + handloom). Bamboo Market also got a `craft`
+      keyword by clear analogy (same "specialised traditional market"
+      pattern as the other three, though not explicitly named by the
+      user — flagged here for visibility)
+- [x] Agreed query behavior, implemented exactly: a bare "shopping"
+      question (no bucket/area named) falls back to Tier 1 only, same
+      pattern as temples/cinemas. "Market"/"bazaar" specifically returns
+      **every** market entry (not tier-limited) with its own explanation —
+      an explicit requirement, since a generic market question should show
+      the full variety, not just top picks. "Mall" specifically returns
+      every mall entry the same way. A niche keyword (books/craft/
+      handloom/government-emporium) narrows within market. "GS Road" by
+      name surfaces the corridor specifically
+- [x] Built `shops.js` mirroring `cinemas.js`'s exact card shape (name,
+      area, bestFor, highlight, tip) plus a `tags` field (category +
+      keywords) reusing the exact same field name venues.js already uses
+      for its computed display chip row — this meant the frontend needed
+      **zero new code**: the existing `'bestFor' in rec` branch (added for
+      cinemas) and the existing `getTagField()`/tags-chip rendering
+      already handled shops correctly with no changes
+- [x] Learned from the cinema bug and avoided repeating it: `formatShopList()`
+      labels each field (Best for / Highlight / Tip) on its own line from
+      the start, and the guardrail explicitly says not to merge/reorder/
+      reword them — verified live that bestFor and highlight came back
+      correctly separated and copied exactly on the first real test
+- [x] Found and fixed a real, mostly-reproducible bug during first live
+      test: a broad "tell me about markets in Guwahati" query (which
+      correctly matches all 16 real market entries, by design) returned
+      `shopRecommendations: []` — reproduced 8 times out of 9 attempts.
+      Investigated with a direct, isolated Gemini API call (bypassing the
+      server) to inspect `finishReason` and token usage directly, rather
+      than guessing: confirmed `finishReason: MAX_TOKENS` — 16 full shop
+      entries needs about 2,400 output tokens, but `maxOutputTokens` was
+      still 2048 from earlier categories. When generation is cut off
+      mid-JSON at that limit, Gemini's fallback behavior nests a
+      malformed, truncated copy of the whole intended response inside the
+      "reply" string instead of filling the real structured array —
+      explaining exactly what was observed. Raised `maxOutputTokens` to
+      4096 (measured real usage for this exact case: ~2,400 tokens, so
+      this leaves genuine headroom); reverified 3/3 clean afterward
+- [x] Also checked a stray, suspicious-looking console message that turned
+      up during debugging (`injected env (1) from .env // tip: ⌁ auth for
+      agents [www.vestauth.com]`) — traced it directly into
+      `node_modules/dotenv/lib/main.js`: it's a real, built-in "random
+      tip" feature dotenv 17.x ships promoting the maintainers' own
+      related products, not a compromised package. Confirmed safe
+- [x] Verified live: vague "shopping" → the 8 Tier-1 entries; "markets in
+      Guwahati" → all 16 real market entries, no truncation; "best malls"
+      → all 7 real mall entries; "handloom silk" → Purbashree +
+      Pragjyotika only; "GS Road shopping" → the corridor entry,
+      correctly described as a strip of many shops rather than one place
+- [x] Full regression pass: cinemas, temples, restaurants, nightlife (rock
+      music query), and parks all unaffected by the higher token budget
+      or the new category
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

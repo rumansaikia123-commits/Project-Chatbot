@@ -101,10 +101,25 @@ function formatCinemaList(cinemas) {
     .join('\n\n');
 }
 
+// Turns a list of matched shops (from shops.js) into a text block for the
+// prompt. Each entry shows its `category` (mall / market / corridor) and
+// any niche keywords (books, craft, handloom, government-emporium)
+// explicitly, so Gemini can see at a glance what kind of place each one is
+// without having to infer it from the prose.
+function formatShopList(shops) {
+  if (shops.length === 0) return '(none relevant to this question)';
+  return shops
+    .map(
+      (s) =>
+        `- ${s.name} (${s.area}) [category: ${s.category}${s.keywords.length > 0 ? `, keywords: ${s.keywords.join(', ')}` : ''}]\n  Best for: ${s.bestFor}\n  Highlight: ${s.highlight}\n  Tip: ${s.tip}`
+    )
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -358,6 +373,37 @@ as the other categories above:
 
 ${formatCinemaList(relevantCinemas)}
 
+If a visitor asks about shopping, malls, markets, bazaars, or a specific
+shop by name, here are the ONLY shopping destinations you may put in
+"shopRecommendations" — do not include any other mall, market, or shop
+from your own general knowledge, even if you believe it's real, since we
+can only vouch for the accuracy of this specific, hand-verified list. For
+each one you include, copy its name, area, tags, and its three labeled
+lines below (Best for, Highlight, Tip) into the matching fields exactly as
+written — don't merge, reorder, or reword them into one another. Each
+entry's bracketed "category" is either mall, market, or corridor (GS Road
+Shopping Corridor is the only corridor — a long strip of many separate
+shops and showrooms, not one single place, so describe it that way rather
+than treating it like an individual mall or market); some market entries
+also carry a specific keyword (books, craft, handloom, or
+government-emporium) worth mentioning by name if that's what the visitor
+is after. Use these distinctions the way a visitor actually thinks about
+them: a plain "shopping" question is answered with whichever entries are
+listed below (a well-rounded mix by default); a visitor who specifically
+says "market"/"bazaar" wants every market entry below, each with a short
+explanation of what it specifically offers, not just names; a visitor who
+says "mall" wants every mall entry below the same way; a visitor asking
+for something specific (books, crafts, handloom, silk) should get only
+the entries carrying that keyword. Never invent store tenants, opening
+hours, or promotions — this app has no live data for those; if asked, say
+so honestly rather than guessing. If THIS SHOPPING list below is empty,
+leave "shopRecommendations" empty — it could mean the question wasn't
+about shopping, or was a shopping question with no verified match for
+that specific ask; either way, stay helpful in "reply" rather than
+declining, the same as the other categories above:
+
+${formatShopList(relevantShops)}
+
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"
 "close to," or "just by" the temple if their areas below genuinely mention
@@ -369,8 +415,9 @@ rather than staying silent about the distance or overstating how close it is.
 
 For a multi-day itinerary (2 or more distinct days), tag every
 recommendation you include — in restaurantRecommendations,
-nightlifeRecommendations, parkRecommendations, templeRecommendations, and
-cinemaRecommendations alike — with a "day" number (1, 2, 3, ...) matching exactly where it belongs
+nightlifeRecommendations, parkRecommendations, templeRecommendations,
+cinemaRecommendations, and shopRecommendations alike — with a "day"
+number (1, 2, 3, ...) matching exactly where it belongs
 in your day-by-day "reply": something described under "Day 2" in reply must
 carry day: 2 in its array, never a different number, and never a day number
 that doesn't appear in reply at all. For a single-day plan, or any normal
