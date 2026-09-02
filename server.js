@@ -11,6 +11,7 @@ const { getRelevantVenues } = require('./venues');
 const { getRelevantRestaurants } = require('./restaurants');
 const { getRelevantParks } = require('./parks');
 const { getRelevantTemples } = require('./temples');
+const { getRelevantCinemas } = require('./cinemas');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -112,8 +113,25 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'deity', 'themes', 'highlight', 'day'],
       },
     },
+    cinemaRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Cinemas being recommended in this reply. Empty if this reply is not recommending cinemas. Never fill in a showtime, ticket price, or seat availability — this app has no live data for those.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          bestFor: { type: Type.STRING },
+          highlight: { type: Type.STRING },
+          tip: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
+        },
+        required: ['name', 'area', 'bestFor', 'highlight', 'tip', 'day'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations'],
 };
 
 const app = express();
@@ -197,6 +215,7 @@ app.post('/api/chat', async (req, res) => {
     const relevantVenues = getRelevantVenues(allVisitorText);
     const relevantParks = getRelevantParks(allVisitorText);
     const relevantTemples = getRelevantTemples(allVisitorText);
+    const relevantCinemas = getRelevantCinemas(allVisitorText);
     // Temples' own area names (hill/locality) are folded into the text
     // restaurants.js sees, purely so its existing area-keyword matching can
     // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
@@ -215,7 +234,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas),
         maxOutputTokens: 2048,
         // Without this, the model's default randomness made it ignore real,
         // correctly-provided venue/restaurant data surprisingly often —
@@ -242,7 +261,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [] };
     }
 
     res.json({
@@ -251,6 +270,7 @@ app.post('/api/chat', async (req, res) => {
       nightlifeRecommendations: parsed.nightlifeRecommendations,
       parkRecommendations: parsed.parkRecommendations,
       templeRecommendations: parsed.templeRecommendations,
+      cinemaRecommendations: parsed.cinemaRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

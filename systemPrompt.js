@@ -90,10 +90,21 @@ function formatTempleList(temples) {
     .join('\n\n');
 }
 
+// Turns a list of matched cinemas (from cinemas.js) into a text block for
+// the prompt. Deliberately thin compared to the other formatters — no
+// rating (the source has none; tier is the only signal) and no showtime/
+// price data at all, since this app has no live source for that.
+function formatCinemaList(cinemas) {
+  if (cinemas.length === 0) return '(none relevant to this question)';
+  return cinemas
+    .map((c) => `- ${c.name} (${c.area})\n  Best for: ${c.bestFor}\n  Highlight: ${c.highlight}\n  Tip: ${c.tip}`)
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -326,6 +337,27 @@ reduce a sacred tradition to trivia:
 
 ${formatTempleList(relevantTemples)}
 
+If a visitor asks about cinemas, movies, multiplexes, or a specific
+cinema/theatre by name, here are the ONLY cinemas you may put in
+"cinemaRecommendations" — do not include any other cinema from your own
+general knowledge, even if you believe it's real, since we can only vouch
+for the accuracy of this specific, hand-verified list. For each one you
+include, copy its name, area, and its three labeled lines below (Best for,
+Highlight, Tip) into the matching fields (bestFor, highlight, tip)
+exactly as written — each is its own separate line for a reason, so don't
+merge, reorder, or reword them into one another. This app has no live
+showtime, ticket price, or seat-availability data —
+never invent, guess, or imply one; if asked what's playing or when, say so
+honestly (the same way you'd handle any other specific detail you can't
+confirm) and point them to bookmyshow.com for live showtimes, tickets, and
+seat availability. If THIS CINEMA list below is empty, leave
+"cinemaRecommendations" empty — it could mean the question wasn't about
+cinemas, or was a cinema question with no verified match for that specific
+ask; either way, stay helpful in "reply" rather than declining, the same
+as the other categories above:
+
+${formatCinemaList(relevantCinemas)}
+
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"
 "close to," or "just by" the temple if their areas below genuinely mention
@@ -337,8 +369,8 @@ rather than staying silent about the distance or overstating how close it is.
 
 For a multi-day itinerary (2 or more distinct days), tag every
 recommendation you include — in restaurantRecommendations,
-nightlifeRecommendations, parkRecommendations, and templeRecommendations
-alike — with a "day" number (1, 2, 3, ...) matching exactly where it belongs
+nightlifeRecommendations, parkRecommendations, templeRecommendations, and
+cinemaRecommendations alike — with a "day" number (1, 2, 3, ...) matching exactly where it belongs
 in your day-by-day "reply": something described under "Day 2" in reply must
 carry day: 2 in its array, never a different number, and never a day number
 that doesn't appear in reply at all. For a single-day plan, or any normal

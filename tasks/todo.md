@@ -882,6 +882,62 @@ nightlife venues stay as plain text for now.
       matches (the earlier same-session fix); restaurants/parks/temples
       unaffected
 
+## Added a sixth category: cinemas (2026-09-02)
+- [x] User shared a well-structured Guwahati multiplex/cinema research
+      document (16 real cinemas, Tier 1-3, consistent fields per entry)
+      and gave an explicit scoping instruction after review: use only the
+      fields usable without any doubt, drop everything flagged as
+      inconsistent/unpopulated/structurally unsupportable. Confirmed via
+      one clarifying question: the source's free-text "Type" column
+      (Premium/major multiplex, Established local cinema, etc.) is
+      dropped entirely rather than normalized — matching works by area
+      and cinema name only, with tier as the vague-question fallback
+      signal (same role tier plays in temples.js)
+- [x] Explicitly out of scope per that instruction: rating/review data
+      (none exists), any live showtime/pricing/seat-availability feature
+      (the source itself says that needs live data this app doesn't
+      have — the existing general "say so honestly rather than guessing"
+      rule already covers a "what's playing" question with zero new
+      code), Type-based filtering, a broken citation artifact in the
+      source, and "facilities"/"nearby shopping" fields that were
+      mentioned in the source's own data-rule section but never actually
+      populated per-entry
+- [x] Built `cinemas.js` closely mirroring `temples.js`'s shape: name,
+      area, tier (internal-only, drives the vague-question fallback),
+      bestFor, highlight, tip. `highlight` combines the source's "Why
+      visit" + "History/context" into one natural sentence — the same
+      light editorial consolidation already used for every other file's
+      highlight field. `getRelevantCinemas()` matches by name (with the
+      two INOX branches disambiguated by mall name, "Aurus" vs "NCS
+      Square") and area; a vague question falls back to the 4 Tier-1
+      cinemas (INOX Aurus, PVR City Centre, Cinepolis Central Mall, INOX
+      NCS Square)
+- [x] Wired into `server.js` (schema + `allVisitorText` matching),
+      `systemPrompt.js` (new `formatCinemaList()` + guardrail paragraph),
+      and `public/script.js` (`renderRecommendations()` category array +
+      a new `'bestFor' in rec` meta-row branch, mirroring the existing
+      `'deity'`/`'entryFee'` branches) — day-tagging for itineraries
+      included for consistency with the other five categories
+- [x] Bug found and fixed during first live test: `formatCinemaList()`
+      originally ran `bestFor` and `highlight` together in one line with
+      no label between them, so Gemini blended the two fields together
+      and even reworded the highlight into text that wasn't in the
+      source at all — a real violation of the "copy exactly" rule.
+      Fixed by giving each field (Best for / Highlight / Tip) its own
+      clearly labeled line, and by explicitly telling the guardrail not
+      to merge/reorder/reword the three lines into each other (the
+      original guardrail wording had also only listed two of the three
+      fields to copy, missing `highlight` entirely). Reverified: fields
+      now come back copied exactly, matching `cinemas.js` verbatim
+- [x] Verified live: "tell me about PVR City Centre" → one accurate,
+      correctly-separated card; "cinema near Beltola" → Matrix Cinemas;
+      "INOX NCS Square" correctly resolves to that branch only, not
+      Aurus; "what movie is playing at PVR tonight?" → an honest "I don't
+      have live movie schedules" reply, no invented showtime, no
+      fabricated card claim
+- [x] Full regression pass: temples, restaurants, nightlife (rock music
+      query), and parks all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

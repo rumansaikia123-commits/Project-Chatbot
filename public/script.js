@@ -94,7 +94,19 @@ function addRecommendationCards(recommendations) {
     const meta = document.createElement('div');
     meta.className = 'rec-meta';
 
-    if ('deity' in rec) {
+    if ('bestFor' in rec) {
+      const bestFor = document.createElement('span');
+      bestFor.className = 'rec-rating';
+      bestFor.textContent = rec.bestFor;
+      meta.appendChild(bestFor);
+
+      if (rec.tip) {
+        const tip = document.createElement('span');
+        tip.className = 'rec-cost';
+        tip.textContent = rec.tip;
+        meta.appendChild(tip);
+      }
+    } else if ('deity' in rec) {
       const deity = document.createElement('span');
       deity.className = 'rec-rating';
       deity.textContent = rec.deity;
@@ -189,6 +201,7 @@ function renderRecommendations(data) {
     data.restaurantRecommendations,
     data.nightlifeRecommendations,
     data.parkRecommendations,
+    data.cinemaRecommendations,
   ];
   const all = categories.flat();
   const isItinerary = all.some((rec) => rec.day != null);
