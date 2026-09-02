@@ -121,16 +121,28 @@ app.post('/api/chat', async (req, res) => {
       timeZone: 'Asia/Kolkata',
     });
 
-    // Look at everything the visitor has said so far (not just their latest
-    // message) for nightlife/food keywords. A single message is too narrow:
-    // once someone asks "where's good coffee" and the bot asks a follow-up
-    // question, their next reply is often something short like "any area" or
-    // "give me a list" — which mentions no food words at all. Checking only
-    // that latest message would wrongly conclude the topic isn't food-related
+    // Look at the visitor's recent messages (not just the latest one) for
+    // nightlife/food keywords. A single message is too narrow: once someone
+    // asks "where's good coffee" and the bot asks a follow-up question,
+    // their next reply is often something short like "any area" or "give
+    // me a list" — which mentions no food words at all. Checking only that
+    // latest message would wrongly conclude the topic isn't food-related
     // anymore and drop the real data, even though the conversation clearly
     // hasn't moved on.
+    //
+    // But combining the ENTIRE conversation (no limit) went too far the
+    // other way: a real user's transcript showed "coffee" mentioned once in
+    // turn 1 still triggering a cafe recommendation in turn 8, well after
+    // they'd moved on to sightseeing questions with nothing to do with
+    // food. A window of the last 4 user messages satisfies both real
+    // transcripts we've seen: it's long enough that "coffee" -> "any
+    // location" -> "both" -> "give me a list" (4 turns) still works, but
+    // short enough that "coffee" -> 3 unrelated turns -> "sightseeing"
+    // (5th turn) correctly no longer counts as a food question.
+    const RECENT_MESSAGE_WINDOW = 4;
     const allVisitorText = messages
       .filter((message) => message.role !== 'assistant')
+      .slice(-RECENT_MESSAGE_WINDOW)
       .map((message) => message.content)
       .join(' ');
     const relevantVenues = getRelevantVenues(allVisitorText);

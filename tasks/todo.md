@@ -444,6 +444,40 @@ nightlife venues stay as plain text for now.
       it has no verified sweet shop while still recommending bakeries for
       dessert and real restaurants for dinner, instead of stonewalling
 
+## Bug fix: stale topic bled into unrelated replies for the rest of the conversation
+- [x] Reported live with a real 8-turn transcript: after "a cup of coffee"
+      in turn 1, the bot kept recommending Daphne's Cafe in replies to
+      "sightseeing" (turn 5), "location to travel in the evening" (turn 6),
+      and "for sightseeing sunset" (turn 8) — none food-related
+- [x] Root cause: the earlier fix that combined ALL user messages in a
+      conversation (to fix short follow-ups like "any location" losing
+      context) had no upper bound — a keyword mentioned once stayed
+      "active" for the rest of the conversation, no matter how many
+      unrelated turns followed
+- [x] Fixed in `server.js`: bounded `allVisitorText` to the last 4 user
+      messages instead of the entire conversation. Chose 4 specifically
+      because it's the smallest window that still satisfies BOTH real
+      transcripts on record: the original "coffee -> any location -> both
+      -> give me a list" case (needs turn 1's context to survive 3
+      follow-ups) and the newly reported case (needs turn 1's context to
+      stop mattering by turn 5)
+- [x] Verified directly against both full transcripts: original case still
+      shows 10 matches at every turn through turn 4; new case correctly
+      drops to 0 matches starting exactly at turn 5, matching where the
+      real bug was observed
+- [x] Verified live: replayed the reported transcript through turn 5
+      against the real server — `restaurantRecommendations` is empty and
+      the reply is genuinely about sightseeing (Kamakhya Temple, sunset
+      cruise) with no stray cafe mention; nightlife follow-up regression
+      ("best rooftop bar" -> "something cheaper") still works correctly
+- [x] Answered a direct question from the user: yes, the agreed next
+      learning step (function calling) would address this whole bug class
+      more robustly than any windowing heuristic — if Gemini decides for
+      itself when to call a search tool, it uses its own understanding of
+      the conversation instead of us guessing relevance from raw keyword
+      matching. Documented as a reason to prioritize it, not a reason to
+      skip this fix
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
