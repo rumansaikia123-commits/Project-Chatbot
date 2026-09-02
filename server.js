@@ -47,8 +47,15 @@ const CHAT_RESPONSE_SCHEMA = {
           // Nullable: only set for a multi-day itinerary (2+ days), so the
           // frontend can group cards by day. Null for a normal question.
           day: { type: Type.NUMBER, nullable: true },
+          // Nullable: only set alongside `day`, marking this item's
+          // position (1, 2, 3...) within that day's own sequence of
+          // activities, so cards render in the order they actually happen
+          // rather than a fixed category order (temple, then restaurant,
+          // then nightlife...) that can put a later activity's card before
+          // an earlier one's.
+          order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'cuisines', 'rating', 'highlight', 'day'],
+        required: ['name', 'area', 'cuisines', 'rating', 'highlight', 'day', 'order'],
       },
     },
     nightlifeRecommendations: {
@@ -67,8 +74,9 @@ const CHAT_RESPONSE_SCHEMA = {
           costForTwo: { type: Type.NUMBER, nullable: true },
           highlight: { type: Type.STRING },
           day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'tags', 'rating', 'costForTwo', 'highlight', 'day'],
+        required: ['name', 'area', 'tags', 'rating', 'costForTwo', 'highlight', 'day', 'order'],
       },
     },
     parkRecommendations: {
@@ -89,8 +97,9 @@ const CHAT_RESPONSE_SCHEMA = {
           entryFee: { type: Type.STRING },
           highlight: { type: Type.STRING },
           day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'activities', 'daysOff', 'entryFee', 'highlight', 'day'],
+        required: ['name', 'area', 'activities', 'daysOff', 'entryFee', 'highlight', 'day', 'order'],
       },
     },
     templeRecommendations: {
@@ -110,8 +119,9 @@ const CHAT_RESPONSE_SCHEMA = {
           dressCode: { type: Type.STRING, nullable: true },
           highlight: { type: Type.STRING },
           day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'deity', 'themes', 'highlight', 'day'],
+        required: ['name', 'area', 'deity', 'themes', 'highlight', 'day', 'order'],
       },
     },
     cinemaRecommendations: {
@@ -127,8 +137,9 @@ const CHAT_RESPONSE_SCHEMA = {
           highlight: { type: Type.STRING },
           tip: { type: Type.STRING },
           day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'bestFor', 'highlight', 'tip', 'day'],
+        required: ['name', 'area', 'bestFor', 'highlight', 'tip', 'day', 'order'],
       },
     },
     shopRecommendations: {
@@ -145,8 +156,9 @@ const CHAT_RESPONSE_SCHEMA = {
           highlight: { type: Type.STRING },
           tip: { type: Type.STRING },
           day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'tags', 'bestFor', 'highlight', 'tip', 'day'],
+        required: ['name', 'area', 'tags', 'bestFor', 'highlight', 'tip', 'day', 'order'],
       },
     },
   },

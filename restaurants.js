@@ -390,10 +390,18 @@ function getRelevantRestaurants(message) {
   // already works fine via the normal OR-match) and the generic word
   // "restaurant" also appears, treat the cuisine as too narrow to apply and
   // fall through to the broader top-rated pool.
+  // "restaurant" itself, and "lunch"/"dinner", are treated as the same
+  // strength of signal here — someone asking "where for lunch?" wants a
+  // proper sit-down meal just as much as someone who says "restaurant",
+  // and both should get the same shop-like-cuisine handling below (unlike
+  // "breakfast", which genuinely fits a cafe stop as its default meaning).
+  const wantsProperMeal = /\brestaurants?\b|\blunch\b|\bdinner\b/.test(text);
+
   const SHOP_LIKE_CUISINES = new Set(['Cafe', 'Mithai', 'Bakery', 'Street Food']);
+  const mentionedShopLikeCuisine = [...matchedCuisines].some((c) => SHOP_LIKE_CUISINES.has(c));
   const onlyShopLikeCuisinesMatched =
     matchedCuisines.size > 0 && [...matchedCuisines].every((c) => SHOP_LIKE_CUISINES.has(c));
-  if (onlyShopLikeCuisinesMatched && /\brestaurants?\b/.test(text)) {
+  if (onlyShopLikeCuisinesMatched && wantsProperMeal) {
     matchedCuisines.clear();
   }
 
@@ -404,6 +412,25 @@ function getRelevantRestaurants(message) {
   if (matchedCuisines.size > 0) {
     results = results.filter((r) => r.cuisines.some((c) => matchedCuisines.has(c)));
   }
+
+  // The reverse gap from the fix above: if the visitor wants a proper meal
+  // ("restaurant", "lunch", or "dinner") and never mentioned a shop-like
+  // cuisine themselves (cafe, bakery, mithai, street food), exclude
+  // entries that are ONLY shop-like (e.g. a plain cafe with cuisines:
+  // ['Cafe']) from the results. Without this, a highly-rated cafe can win
+  // the broad top-rated fallback below and get shown for a plain "lunch"
+  // or "restaurant" request — two real bugs users hit (asked for "lunch
+  // in a restaurant," got a cafe; a plain "lunch"/"dinner" ask, same
+  // issue, confirmed separately). A restaurant that merely also serves
+  // something shop-like among other cuisines (e.g. Kiranshree Sweets:
+  // Chinese/North Indian/.../Mithai) is untouched — only entries where
+  // every listed cuisine is shop-like. An explicit cuisine mention always
+  // wins regardless — "a nice cafe for lunch" still returns cafes, since
+  // mentionedShopLikeCuisine is true in that case.
+  if (wantsProperMeal && !mentionedShopLikeCuisine) {
+    results = results.filter((r) => !r.cuisines.every((c) => SHOP_LIKE_CUISINES.has(c)));
+  }
+
   if (budget) {
     results = results.filter(
       (r) => r.costForTwo != null && (!budget.min || r.costForTwo >= budget.min) && (!budget.max || r.costForTwo <= budget.max)

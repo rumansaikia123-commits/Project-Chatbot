@@ -422,7 +422,22 @@ in your day-by-day "reply": something described under "Day 2" in reply must
 carry day: 2 in its array, never a different number, and never a day number
 that doesn't appear in reply at all. For a single-day plan, or any normal
 question that isn't a multi-day itinerary, leave "day" null on every
-recommendation.`;
+recommendation.
+
+Whenever a single day's plan mentions two or more of these recommendation
+categories in a sequence — e.g. a temple in the morning, lunch at a
+restaurant, a film in the evening, then a bar or club at night — also set
+"order" (1, 2, 3, ...) on each of those items to its position in that
+sequence, matching the order you actually describe them in "reply". This
+applies whether the plan covers one day or several: what matters is
+whether multiple activities happen in some sequence within a day, not how
+many days there are. The frontend renders each day's cards in "order",
+not in a fixed category order — without it, a card for something later in
+the day (like a night out) can render before a card for something earlier
+(like an evening film), even though the text correctly describes them in
+the right sequence. Leave "order" null whenever "day" is null, or when a
+day's cards don't have a genuine sequence (e.g. a plain "restaurants and
+bars" question with no itinerary at all).`;
 }
 
 module.exports = buildSystemPrompt;

@@ -1011,6 +1011,97 @@ nightlife venues stay as plain text for now.
       music query), and parks all unaffected by the higher token budget
       or the new category
 
+## Fix: "restaurant" returning a cafe, and itinerary cards rendering out of story order (2026-09-03)
+- [x] User reported live, from a real 4-activity single-day plan (temple ->
+      lunch -> movie -> party): (1) asking for "lunch in a restaurant" got
+      a cafe instead; (2) the reply text correctly said movie-then-party,
+      but the recommendation cards below it showed the nightlife card
+      before the cinema card — reversed from the actual story
+- [x] Root cause #1: `restaurants.js` had logic to stop a mentioned
+      shop-like cuisine (cafe/bakery/etc.) from starving a "restaurant"
+      request of non-cafe options, but no logic for the reverse case —
+      saying "restaurant" alone, with no cuisine at all, applied no
+      filter, so a highly-rated pure cafe could win the top-rated
+      fallback. Fixed: when the message says "restaurant" and never
+      mentions a shop-like cuisine itself, exclude entries whose cuisines
+      are ALL shop-like (a plain cafe) from the results — entries that
+      merely also serve something shop-like alongside real cuisines
+      (e.g. Kiranshree Sweets: Chinese/North Indian/.../Mithai) are
+      untouched. Verified: plain "lunch in a restaurant" now excludes
+      pure cafes; plain cafe queries, combined "cafe and restaurant"
+      asks, and existing cuisine-specific narrowing all unaffected
+- [x] Root cause #2 found by direct code inspection, not guessing: the
+      day-grouped rendering path in `public/script.js` rendered each
+      day's cards in one *fixed* category order (temple, restaurant,
+      nightlife, park, cinema, shop) regardless of the actual sequence
+      described in that day's "reply" text — nightlife came before
+      cinema in that fixed list, so it always rendered first even when
+      the story said "movie, then party"
+- [x] Fixed by adding a new nullable `order` field (1, 2, 3...) alongside
+      the existing `day` field on all six recommendation categories —
+      marking an item's position in its day's actual sequence — and
+      sorting each rendered group by it instead of relying on fixed
+      category order. `systemPrompt.js` instructs the model to set
+      `order` whenever a day's plan has a real sequence of activities,
+      matching the order things are described in "reply"
+- [x] Found and fixed a second problem while verifying live: a real test
+      of the exact reported scenario came back with `order` correctly
+      set (1, 2, 3, 4) but `day` left `null` — the existing day-tagging
+      rule only strictly required a 2+ day itinerary, and this was a
+      single busy day. Since the frontend's day-grouped/ordered
+      rendering path only activated when `day` was present, this case
+      fell straight back into the old fixed-category-order bug despite
+      `order` being correct. Fixed by re-keying the frontend's trigger
+      condition on `order` instead of `day`: a real sequence (any `order`
+      present) now renders correctly whether or not a day number is also
+      set — a single sequential day renders as one flat, correctly
+      ordered list with no "Day N" heading; a real multi-day itinerary
+      still gets day headings, each internally sorted by `order`
+- [x] Verified live: the exact reported scenario (temple -> restaurant ->
+      cinema -> nightlife) now returns `order: 1, 2, 3, 4` matching that
+      sequence exactly, confirmed correct render order via a direct
+      simulation of the sorting logic against the real captured response
+- [x] Regression pass: plain "cheap cafes" (order/day stay null,
+      unaffected); "restaurants and bars in Guwahati" (non-itinerary
+      compound question — still renders as two distinct category
+      clusters, untouched); a real 3-day temple+food itinerary (day
+      correctly 1/2/3, order correctly set within each day)
+- [x] Also discussed live, not yet built: a deeper cause behind why NYX
+      Lounge & Deck (Khanapara) and Anuradha Cineplex (Bamunimaidan) got
+      paired on the same day despite being geographically far apart —
+      the only cross-category area-awareness anywhere in this app is the
+      narrow temple-area-into-restaurant-matching hack; there's no
+      general "keep a day's picks in one locality" mechanism, and no
+      real distance/coordinate data to make that guaranteed rather than
+      best-effort. Discussed as the kind of problem "function calling"
+      (letting Gemini chain each day's picks off the previous one's
+      actual area, already flagged as a future learning step earlier in
+      this log) would address more fundamentally than a prompt tweak —
+      agreed as a real, separate future project, not something folded
+      into this fix
+
+## Extended the restaurant-vs-cafe fix to "lunch"/"dinner" (2026-09-03)
+- [x] User asked to check whether plain "lunch"/"dinner" (no "restaurant"
+      word) had the same pure-cafe gap just fixed for "restaurant" —
+      checked directly before answering rather than guessing: plain
+      "lunch" returned 4/10 pure cafes, plain "dinner" 3/10, confirming
+      the same bug, since the earlier fix's trigger only matched the
+      literal word "restaurant"
+- [x] Fixed in `restaurants.js`: introduced `wantsProperMeal` (restaurant
+      OR lunch OR dinner) as the shared trigger for both the existing
+      "don't starve a restaurant request when a shop-like cuisine is also
+      mentioned" logic and the new "exclude pure-shop-like entries"
+      exclusion — both now treat "lunch"/"dinner" as equally strong a
+      signal as "restaurant" itself. Deliberately did NOT include
+      "breakfast" — a cafe is a normal, expected answer to a breakfast
+      question, unlike lunch/dinner
+- [x] Verified: plain "lunch"/"dinner" now exclude pure cafes; "a nice
+      cafe for lunch" still returns cafes (explicit cuisine always wins);
+      plain "cafes" and "breakfast" queries unaffected; existing
+      "restaurant" and cuisine-specific narrowing (e.g. "Chinese
+      restaurant near Six Mile") unaffected; confirmed live against a
+      fresh server with "where should I go for dinner tonight?"
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

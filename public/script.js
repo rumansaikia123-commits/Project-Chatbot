@@ -185,14 +185,20 @@ function addDayHeading(day) {
 }
 
 // Renders every recommendation the server returned. Most questions aren't
-// itineraries, so the common path is unchanged: four separate card groups
-// (temple, restaurant, nightlife, park), each visually clustered on its
-// own — this keeps a compound question like "restaurants and bars in
-// Guwahati" showing two clearly distinct clusters instead of one
-// undifferentiated list. Only when the server actually tagged a multi-day
-// itinerary (any recommendation has a non-null `day`) do we switch to
-// grouping every category together under "Day N" headings instead, since
-// at that point the day itself is the meaningful grouping, not the category.
+// itineraries, so the common path is unchanged: separate card groups per
+// category, each visually clustered on its own — this keeps a compound
+// question like "restaurants and bars in Guwahati" showing two clearly
+// distinct clusters instead of one undifferentiated list.
+//
+// The trigger for the sequenced path is `order`, not `day` — a real
+// transcript showed Gemini tagging a genuinely sequential single-day plan
+// (temple -> lunch -> film -> night out) with real `order` values (1, 2,
+// 3, 4) but leaving `day` null, since the day-tagging rule only strictly
+// requires a 2+ day itinerary. Keying off `day` alone meant that case fell
+// through to the plain category-clustered path and still showed a later
+// activity's card (the night out) before an earlier one's (the film).
+// Keying off `order` instead means the sequence renders correctly whether
+// or not a day number happens to be present.
 function renderRecommendations(data) {
   // Temple first so it visually anchors that day's food picks, the way a
   // real itinerary reads ("visit the temple, then eat nearby").
@@ -205,25 +211,35 @@ function renderRecommendations(data) {
     data.shopRecommendations,
   ];
   const all = categories.flat();
-  const isItinerary = all.some((rec) => rec.day != null);
+  const hasSequence = all.some((rec) => rec.order != null);
 
-  if (!isItinerary) {
+  if (!hasSequence) {
     for (const recommendations of categories) {
       addRecommendationCards(recommendations);
     }
     return;
   }
 
+  const byOrder = (a, b) => (a.order ?? Infinity) - (b.order ?? Infinity);
+  const hasDays = all.some((rec) => rec.day != null);
+
+  if (!hasDays) {
+    // A real sequence exists, but it's a single day with no day number —
+    // one flat list of cards, correctly ordered, no "Day N" heading.
+    addRecommendationCards([...all].sort(byOrder));
+    return;
+  }
+
   const days = [...new Set(all.filter((rec) => rec.day != null).map((rec) => rec.day))].sort((a, b) => a - b);
   for (const day of days) {
     addDayHeading(day);
-    addRecommendationCards(all.filter((rec) => rec.day === day));
+    addRecommendationCards(all.filter((rec) => rec.day === day).sort(byOrder));
   }
 
   // Safety net: anything left untagged (shouldn't normally happen once the
   // model commits to itinerary mode) still gets shown, just without a day heading.
   const untagged = all.filter((rec) => rec.day == null);
-  if (untagged.length > 0) addRecommendationCards(untagged);
+  if (untagged.length > 0) addRecommendationCards(untagged.sort(byOrder));
 }
 
 formEl.addEventListener('submit', async (event) => {
