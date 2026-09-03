@@ -15,6 +15,7 @@ const { getRelevantCinemas } = require('./cinemas');
 const { getRelevantShops } = require('./shops');
 const { getRelevantAttractions } = require('./attractions');
 const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require('./accommodations');
+const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues } = require('./sports');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -229,8 +230,67 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'rating', 'reviewCount', 'highlight'],
       },
     },
+    spectatorVenueRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Stadiums and major government/institutional sports venues being recommended in this reply, for a "watch a match" or spectator question — NOT bookable private facilities, which have their own array. Empty if this reply is not recommending a spectator venue. These are ticket-access/coaching venues, not walk-up bookable.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          indoorOutdoor: { type: Type.STRING },
+          operator: { type: Type.STRING },
+          highlight: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
+        },
+        required: ['name', 'area', 'activities', 'indoorOutdoor', 'operator', 'highlight', 'day', 'order'],
+      },
+    },
+    sportsFacilityRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Private, bookable sports facilities (courts, turfs, clubs) being recommended in this reply, for a "where can I play X" question — NOT spectator stadiums, which have their own array. Empty if this reply is not recommending one.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          indoorOutdoor: { type: Type.STRING },
+          operator: { type: Type.STRING },
+          rating: { type: Type.NUMBER, nullable: true },
+          reviewCount: { type: Type.NUMBER, nullable: true },
+          highlight: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
+        },
+        required: ['name', 'area', 'activities', 'indoorOutdoor', 'operator', 'highlight', 'day', 'order'],
+      },
+    },
+    gamingRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Indoor gaming/arcade/family entertainment venues (bowling, VR, trampoline parks, etc.) being recommended in this reply. Empty if this reply is not recommending one.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          rating: { type: Type.NUMBER, nullable: true },
+          reviewCount: { type: Type.NUMBER, nullable: true },
+          highlight: { type: Type.STRING },
+          day: { type: Type.NUMBER, nullable: true },
+          order: { type: Type.NUMBER, nullable: true },
+        },
+        required: ['name', 'area', 'activities', 'highlight', 'day', 'order'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations'],
 };
 
 const app = express();
@@ -320,6 +380,9 @@ app.post('/api/chat', async (req, res) => {
     const relevantHotels = getRelevantHotels(allVisitorText);
     const relevantResorts = getRelevantResorts(allVisitorText);
     const relevantHomestays = getRelevantHomestays(allVisitorText);
+    const relevantSpectatorVenues = getRelevantSpectatorVenues(allVisitorText);
+    const relevantSportsFacilities = getRelevantSportsFacilities(allVisitorText);
+    const relevantGamingVenues = getRelevantGamingVenues(allVisitorText);
     // Temples' own area names (hill/locality) are folded into the text
     // restaurants.js sees, purely so its existing area-keyword matching can
     // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
@@ -338,7 +401,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues),
         // Raised from 2048: a broad "market" question now returns all 16
         // real market entries with full text fields, which needs ~2,400
         // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON
@@ -373,7 +436,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [] };
     }
 
     res.json({
@@ -388,6 +451,9 @@ app.post('/api/chat', async (req, res) => {
       hotelRecommendations: parsed.hotelRecommendations,
       resortRecommendations: parsed.resortRecommendations,
       homestayRecommendations: parsed.homestayRecommendations,
+      spectatorVenueRecommendations: parsed.spectatorVenueRecommendations,
+      sportsFacilityRecommendations: parsed.sportsFacilityRecommendations,
+      gamingRecommendations: parsed.gamingRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

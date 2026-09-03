@@ -131,16 +131,33 @@ function addRecommendationCards(recommendations) {
       distance.textContent = `${rec.distanceFromDispur} from Dispur`;
       meta.appendChild(distance);
     } else if ('reviewCount' in rec) {
-      // Homestays/Airbnb: no stars, just a rating + how many reviews it's based on.
+      // Homestays/Airbnb and gaming venues: no stars, just a rating + how
+      // many reviews it's based on. Homestays always have a real number
+      // here, but gaming venues (e.g. GeT TaggED) may legitimately have
+      // neither verified — show that honestly rather than rendering
+      // "★ null" / "null reviews".
       const rating = document.createElement('span');
       rating.className = 'rec-rating';
-      rating.textContent = `★ ${rec.rating}`;
+      rating.textContent = rec.rating != null ? `★ ${rec.rating}` : 'rating not verified';
       meta.appendChild(rating);
 
       const reviews = document.createElement('span');
       reviews.className = 'rec-cost';
-      reviews.textContent = `${rec.reviewCount} reviews`;
+      reviews.textContent = rec.reviewCount != null ? `${rec.reviewCount} reviews` : 'review count not verified';
       meta.appendChild(reviews);
+    } else if ('indoorOutdoor' in rec) {
+      // Spectator venues and sports facilities: indoor/outdoor plus
+      // either a rating (facilities, may be null) or the operator
+      // (spectator venues, which have no rating field at all).
+      const io = document.createElement('span');
+      io.className = 'rec-rating';
+      io.textContent = rec.indoorOutdoor;
+      meta.appendChild(io);
+
+      const secondary = document.createElement('span');
+      secondary.className = 'rec-cost';
+      secondary.textContent = rec.rating != null ? `★ ${rec.rating}` : rec.operator;
+      meta.appendChild(secondary);
     } else if ('stars' in rec) {
       // Hotels/resorts: stars and rating may each legitimately be null
       // ("not verified" in the source data) — show that honestly instead
@@ -242,6 +259,9 @@ function renderRecommendations(data) {
     data.hotelRecommendations,
     data.resortRecommendations,
     data.homestayRecommendations,
+    data.spectatorVenueRecommendations,
+    data.sportsFacilityRecommendations,
+    data.gamingRecommendations,
   ];
   const all = categories.flat();
   const hasSequence = all.some((rec) => rec.order != null);

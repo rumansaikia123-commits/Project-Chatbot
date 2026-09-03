@@ -154,10 +154,35 @@ function formatHomestayList(homestays) {
     .join('\n\n');
 }
 
+// Turns a list of matched spectator venues or sports facilities (from
+// sports.js) into a text block for the prompt. Shared by both, since
+// they have the same core shape (name, area, activities, indoor/outdoor,
+// operator) — facilities additionally show rating/reviews when present.
+function formatSportsVenueList(venues) {
+  if (venues.length === 0) return '(none relevant to this question)';
+  return venues
+    .map((v) => {
+      const ratingLine =
+        'rating' in v ? `\n  Rating: ${v.rating != null ? `${v.rating}/5 (${v.reviewCount} reviews)` : 'not verified'}` : '';
+      return `- ${v.name} (${v.area}) [${v.activities.join(', ')}] [${v.indoorOutdoor}, operator: ${v.operator}]${ratingLine}\n  Highlight: ${v.highlight}`;
+    })
+    .join('\n\n');
+}
+
+function formatGamingVenueList(venues) {
+  if (venues.length === 0) return '(none relevant to this question)';
+  return venues
+    .map((g) => {
+      const rating = g.rating != null ? `${g.rating}/5 (${g.reviewCount} reviews)` : 'rating not verified';
+      return `- ${g.name} (${g.area}) [${g.activities.join(', ')}] [${rating}]\n  Highlight: ${g.highlight}`;
+    })
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -204,6 +229,16 @@ ask a clarifying question for that one vague part only, in "reply," and
 still answer every other on-topic part of the request fully and
 normally — never decline the entire message as off-topic just because one
 piece of an otherwise perfectly valid Guwahati itinerary needs more detail.
+
+The same rule applies when a part of the request is specific rather than
+vague, but simply has no verified match in any of the lists below — e.g.
+"I want to learn football and hockey" when only football has a real
+facility to offer. That is a partial-answer situation, not a decline
+situation: answer the part(s) with real data fully and normally, and for
+the unmatched part, say plainly and briefly that you don't have a
+verified option for it — never let one genuinely unsupported activity,
+cuisine, or place pull the whole reply down into the off-topic decline
+template, and never guess or invent something for it either.
 
 This is a back-and-forth conversation, so treat each new message as a natural
 follow-up to what came before (e.g. "what about day 2" refers back to an
@@ -526,6 +561,41 @@ empty, leave "homestayRecommendations" empty, same reasoning as above:
 
 ${formatHomestayList(relevantHomestays)}
 
+If a visitor asks about watching a match, a stadium, or a spectator
+sports venue — here are the ONLY venues you may put in
+"spectatorVenueRecommendations": copy name, area, activities, indoor/
+outdoor, and operator exactly, plus its highlight line as-is or lightly
+paraphrased. These are all ticket-access/coaching venues (major
+government or institutional facilities) — not walk-up bookable courts,
+which belong in sportsFacilityRecommendations instead, never here. Never
+invent a match schedule, ticket price, or seat availability — this app
+has no live data for those; if asked, say so honestly. If THIS SPECTATOR
+VENUE list below is empty, leave "spectatorVenueRecommendations" empty —
+same "could just be no match for this specific ask, stay helpful"
+reasoning as every other category above:
+
+${formatSportsVenueList(relevantSpectatorVenues)}
+
+If a visitor asks about playing a sport themselves — booking a court,
+turf, or class — here are the ONLY facilities you may put in
+"sportsFacilityRecommendations", same copy-exactly rules as above. These
+are bookable private facilities, not spectator stadiums — don't confuse
+the two, and don't invent current availability or pricing. If THIS
+SPORTS FACILITY list below is empty, leave "sportsFacilityRecommendations"
+empty, same reasoning as above:
+
+${formatSportsVenueList(relevantSportsFacilities)}
+
+If a visitor asks about indoor gaming, arcades, bowling, VR, or family
+entertainment — here are the ONLY venues you may put in
+"gamingRecommendations", copying name, area, activities, rating, and
+review count exactly (rating/review count may be "not verified" for some
+— say so honestly rather than inventing a number), plus its highlight
+line as-is or lightly paraphrased. If THIS GAMING list below is empty,
+leave "gamingRecommendations" empty, same reasoning as above:
+
+${formatGamingVenueList(relevantGamingVenues)}
+
 None of hotelRecommendations, resortRecommendations, or
 homestayRecommendations use "day" or "order" — unlike every other
 recommendation category, a place to stay isn't a sequenced daily
@@ -543,8 +613,11 @@ rather than staying silent about the distance or overstating how close it is.
 For a multi-day itinerary (2 or more distinct days), tag every
 recommendation you include — in restaurantRecommendations,
 nightlifeRecommendations, parkRecommendations, templeRecommendations,
-cinemaRecommendations, shopRecommendations, and attractionRecommendations
-alike — with a "day" number (1, 2, 3, ...) matching exactly where it belongs
+cinemaRecommendations, shopRecommendations, attractionRecommendations,
+spectatorVenueRecommendations, sportsFacilityRecommendations, and
+gamingRecommendations alike (hotelRecommendations, resortRecommendations,
+and homestayRecommendations excepted, per the note above) — with a "day"
+number (1, 2, 3, ...) matching exactly where it belongs
 in your day-by-day "reply": something described under "Day 2" in reply must
 carry day: 2 in its array, never a different number, and never a day number
 that doesn't appear in reply at all. For a single-day plan, or any normal

@@ -1403,6 +1403,145 @@ nightlife venues stay as plain text for now.
       response randomness already documented earlier in this file, not
       something introduced or fixable by this change
 
+## Added sports & recreation as three new categories (2026-09-03)
+- [x] User shared a Guwahati sports & recreation research document across
+      4 source groupings (Stadiums & Major Sports Venues, Government/
+      Institutional Sports Complexes, Private/Recreational Sports, Gaming
+      & Entertainment). Found the same duplicate-entry problem already
+      hit once with accommodation's "The Greenwood": "R.G. Baruah Sports
+      Complex" was listed as its own row AND folded into "Nehru Stadium /
+      R.G. Baruah Sports Complex" under a different source category — the
+      same real venue, described twice. User resolved directly: the name
+      is "Nehru Stadium," the location is R.G. Baruah Road
+- [x] Discussed the category structure before building. The source's 4
+      groupings didn't match visitor intent (that mismatch is exactly why
+      the duplicate happened — the two "ticket-access, government-run"
+      groupings overlapped). Rebuilt around 3 intent-based groups
+      instead, confirmed by the user: spectator venues (watch a match),
+      play-it-yourself sports facilities (book a court/turf), and gaming
+      & family entertainment (arcade/bowling/VR/etc.)
+- [x] User confirmed LAPX Go-Karting is open (dropped the source's own
+      "live status to verify" hedge) and asked me to research and add
+      PUNO — a real Guwahati indoor adventure/trampoline park the source
+      document didn't include. Researched via WebSearch: NH 37 Lokhra,
+      Lalung Gaon Rd, near Binod Nissan Betkuchi, Sonaighuli, Guwahati,
+      Assam 781035; trampoline zones, a ninja/obstacle course, rock
+      climbing ("Sky Wall"), bowling, VR, and arcade gaming; a real
+      4.8/5 rating from 3,032 Google reviews. Added to gamingVenues
+- [x] One deliberate deviation from the accommodation precedent, stated
+      up front rather than asked as a question since it followed directly
+      from established precedent: unlike a hotel (where you stay, not
+      something you do), all three sports groups ARE genuine itinerary
+      activities — so, unlike accommodations, all three DO carry
+      day/order tagging, matching the original 8 categories
+- [x] Built `sports.js` (one file for all three groups, same reasoning as
+      accommodations.js — heavy shared sport/area vocabulary): 13
+      spectator venues (7 stadiums + 6 remaining government complexes
+      after merging the Nehru Stadium/R.G. Baruah duplicate), 17
+      facilities, 4 gaming venues (3 from the source + PUNO). A shared
+      `ACTIVITY_KEYWORDS` table covers both real sports and gaming
+      vocabulary, since the actual per-entry `activities` arrays — not
+      the keyword recognition — do the real narrowing
+- [x] Reused the sibling-deference pattern from the accommodations fix,
+      but found and fixed a real gap in it during pre-live testing: "where
+      can I WATCH a cricket match" was also surfacing box-cricket
+      facilities, because a bare shared activity word ("cricket" — used
+      by both a stadium and a private arena) let both groups think they
+      had their own signal, so neither deferred. Fixed by distinguishing
+      an "explicit" signal (a category's own trigger word or a named
+      venue) from a "weak" one (a bare shared activity word alone) — a
+      group now only defers to a SIBLING'S explicit signal, and its own
+      weak signal no longer protects it from doing so
+- [x] Two more bugs found and fixed during the same pre-live testing
+      pass: the spectator trigger required "watch" immediately before
+      "match"/"game" and failed on the single most natural phrasing
+      ("watch A CRICKET match"); and "fun indoor activities for
+      families" — an entirely reasonable way to ask about the whole
+      gaming category — matched nothing, since every word in the
+      original gaming trigger was a specific named activity (arcade/VR/
+      etc.) rather than a general phrase for the category itself. Also
+      added a real `rooftop` boolean + filter (PlayAir, NCS Square
+      SkyBall), since "rooftop sports arena" matched nothing at all in
+      the first version
+- [x] `server.js`/`systemPrompt.js`/`public/script.js`: wired the 3 new
+      categories the same mechanical way as every prior one, WITH day/
+      order fields this time (unlike accommodations). One existing
+      script.js branch (`'reviewCount' in rec`, previously homestay-only)
+      was made null-safe rather than adding a near-duplicate branch,
+      since gaming venues share that exact shape but can legitimately
+      have a null rating (GeT TaggED)
+- [x] Verified live against a fresh server: Nehru Stadium dedup holds
+      (one result, R.G. Baruah Road); "watch a cricket match" and "play
+      badminton" now correctly stay in their own separate groups; "fun
+      indoor activities for families" returns all 4 gaming venues
+      including PUNO with its real address/rating; LAPX no longer shows
+      the verify caveat; "rooftop sports arenas" returns exactly the 2
+      real rooftop venues; a compound itinerary (temple, badminton,
+      dinner, nightlife) correctly order-tags the sports facility
+      alongside every other category in one sequence
+- [x] Full regression pass: temples, parks, restaurants, cinemas, shops,
+      attractions, nightlife, hotel dedup, resorts, homestays, and a
+      genuinely off-topic question — all still correct. Noticed 2
+      separate one-off empty-reply flakes during this pass (retried
+      clean both times) — same pre-existing `gemini-3.5-flash-lite`
+      response randomness documented earlier in this file
+- [x] **Found a real, separate bug during this regression pass, NOT
+      caused by sports.js**: "shopping near Fancy Bazaar" also returned
+      2 hotels and 1 homestay, because "Fancy Bazaar" is a real area in
+      both `shops.js` and `accommodations.js`, and the sibling-deference
+      fix built for accommodations only defers hotels/resorts/homestays
+      to EACH OTHER — it has no awareness of a completely different
+      category file like shops.js. Confirmed directly this is entirely
+      within accommodations.js's own matching (shops.js unaffected;
+      sports.js not involved). Flagged to the user rather than silently
+      fixed, since a real fix means deciding whether every category
+      should defer to every other category globally — a bigger
+      architectural question than a same-file sibling fix
+
+## Bug fix: unmatched sub-topic in a compound question triggered a full decline (2026-09-03)
+- [x] User asked me to stress-test the new sports categories with a batch
+      of questions ("I want to learn cricket/tennis/football and hockey",
+      "play cricket", "arcade or gaming", "pickleball, badminton etc.",
+      "hotel near Barsapara stadium") and report honestly first. 5 of 7
+      were genuinely good (including "learn cricket"/"learn tennis"
+      working correctly with no dedicated "learn" trigger needed, since
+      the sport name alone was enough); one was a real, reproducible bug
+- [x] "I want to learn football and hockey" got the full off-topic
+      decline 2 of 3 times. Root cause, confirmed at the data layer
+      first: football has 5 real bookable facilities, but hockey has
+      ZERO (the only hockey venue in the data is a spectator stadium, not
+      a bookable facility) — so the football candidate list was genuinely
+      non-empty and correct, but the unmatched "hockey" part was dragging
+      the whole reply into a decline anyway. One retry's own wording gave
+      the mechanism away: "I can't help with hockey — but I'd love to
+      help you plan some football training!" — the model correctly
+      recognized hockey had no match, but let that verdict apply to the
+      entire message on 2 of 3 tries instead of just the unmatched part.
+      This is the third time this session this exact failure shape has
+      appeared (the vague-park-itinerary bug, then the casual-phrasing
+      accommodation bug, now this) — always the same root cause: a
+      compound request where part of it has no real data confuses the
+      model into declining everything, unless it wins that judgment call,
+      which isn't reliable on its own
+- [x] Fixed generally in `systemPrompt.js`, not sports-specifically — this
+      exact bug shape could recur for any category — by extending the
+      existing "vague ≠ off-topic" paragraph (added earlier today for the
+      park bug) with a new paragraph covering the DIFFERENT case: a part
+      of the request that's specific (not vague) but has genuinely no
+      verified match anywhere. Explicitly named as a "partial-answer
+      situation, not a decline situation" — answer the matched part(s)
+      fully, and for the unmatched part, say plainly there's no verified
+      option rather than guessing or declining the whole message
+- [x] Verified live: the exact failing message now succeeds 5/5 (previously
+      failing 2/3) — real football facilities returned every time, no
+      decline, honest about hockey having no verified option
+- [x] Full regression pass against a fresh server: both of today's earlier
+      off-topic-decline fixes (the vague-park compound itinerary, and the
+      casual "room to crash" accommodation phrasing) still hold; temples,
+      restaurants, nightlife, hotel dedup, spectator venues, sports
+      facilities, gaming venues, and a genuinely off-topic question — all
+      unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
