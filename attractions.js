@@ -129,11 +129,11 @@ const attractions = [
     highlight: 'Historic water body and popular central-city leisure area.' },
 
   { name: 'Guwahati Planetarium', area: 'Uzan Bazaar', tier: 3, rank: 20, distanceFromDispur: '~7 km',
-    themes: ['museum-heritage', 'family-attraction', 'adventure-activity'],
+    themes: ['museum-heritage', 'family-attraction'],
     highlight: 'Popular astronomy and science attraction, particularly suitable for families.' },
 
   { name: 'Regional Science Centre', area: 'Khanapara', tier: 3, rank: 21, distanceFromDispur: '~10 km',
-    themes: ['museum-heritage', 'family-attraction', 'adventure-activity'],
+    themes: ['museum-heritage', 'family-attraction'],
     highlight: 'Interactive science attraction with educational exhibits and activities.' },
 
   { name: 'Shilpagram', area: 'Panjabari', tier: 3, rank: 22, distanceFromDispur: '~5 km',
@@ -286,7 +286,14 @@ const THEME_KEYWORDS = [
   { pattern: /\blake\b|water\s?body/, theme: 'lake-water-body' },
   { pattern: /archaeolog/, theme: 'archaeological-site' },
   { pattern: /day\s?trip|excursion|day\s?tour/, theme: 'day-trip' },
-  { pattern: /adventure|\bactivit(y|ies)\b/, theme: 'adventure-activity' },
+  // Narrowed from also matching the bare word "activity"/"activities" —
+  // that was far too generic and is why Guwahati Planetarium/Regional
+  // Science Centre (both had this theme tagged on, incorrectly — neither
+  // is remotely an adventure activity) could get pulled into an
+  // unrelated query that just happened to mention "activities" for any
+  // reason. "nature" already has its own separate 'scenic-nature' theme
+  // below, so narrowing this one doesn't lose that word's coverage.
+  { pattern: /\badventure\b/, theme: 'adventure-activity' },
 ];
 
 const AREA_KEYWORDS = [
@@ -360,8 +367,25 @@ function matchAreas(text) {
 // "things to do" question with no name/theme/area falls back to the 9
 // Tier 1 places, sorted by the source document's own rank — the same
 // fallback role tier plays in temples.js/cinemas.js.
+// "Adventure sport" belongs to sports.js instead (go-karting, archery,
+// rock climbing, etc. — real physical activities, not sightseeing) —
+// never surface wildlife/nature attractions for this specific phrasing.
+// Bare "adventure activity"/"adventure activities" (no "sport" word, and
+// no nature/wildlife-specific word either) is genuinely ambiguous
+// between the two intents — rather than guess, this returns nothing and
+// lets the guardrail ask a brief clarifying question instead, the same
+// pattern parks.js already uses for a fully vague park request. Neither
+// check fires for a bare "adventure" or "nature" question on its own —
+// that keeps matching the existing wildlife/nature theme normally.
+const ADVENTURE_SPORT_PATTERN = /\badventure\s?sports?\b/;
+const ADVENTURE_ACTIVITY_AMBIGUOUS_PATTERN = /\badventure\s?activit(y|ies)\b/;
+const NATURE_OR_WILDLIFE_QUALIFIER = /\bwildlife\b|\bnature\b|\bsafari\b|\brhino\b|\bsanctuary\b/;
+
 function getRelevantAttractions(message) {
   const text = message.toLowerCase();
+
+  if (ADVENTURE_SPORT_PATTERN.test(text)) return [];
+  if (ADVENTURE_ACTIVITY_AMBIGUOUS_PATTERN.test(text) && !NATURE_OR_WILDLIFE_QUALIFIER.test(text)) return [];
 
   const matchedNames = matchNames(text).filter((name) => !CROSS_REFERENCED_NAMES.has(name));
   const matchedThemes = matchThemes(text);

@@ -314,6 +314,15 @@ const LEARN_TRIGGER = /\blearn(ing)?\b|\bcoach(ing)?\b|\btrain(ing)?\b/;
 const GAMING_TRIGGER =
   /\barcade\b|\bbowling\b|laser\s?tag|\bvr\b|virtual\s?reality|\btrampoline\b|rock[\s-]?climbing|obstacle\s?course|ninja\s?course|\bgaming\b|family\s?entertainment|indoor\s?(fun|activities|entertainment)|things?\s?to\s?do\s?indoors?|kids?\s?activities|entertainment\s?(centre|center)|\bfoosball\b|\bsnooker\b/;
 const ROOFTOP_TRIGGER = /\brooftop\b/;
+// "Adventure sport" is a curated subset, not a real activity tag on its
+// own — the genuinely adventure-flavored activities across both
+// sportsFacilities (go-karting, archery) and gamingVenues (PUNO
+// Advance's rock climbing, obstacle/ninja course, trampoline). Matches
+// attractions.js's own "adventure sport" handling: a bare "adventure" or
+// "nature" question is a different, wildlife/scenic intent handled
+// entirely over there, never here.
+const ADVENTURE_SPORT_TRIGGER = /\badventure\s?sports?\b/;
+const ADVENTURE_SPORT_ACTIVITIES = new Set(['go-karting', 'archery', 'rock-climbing', 'obstacle-course', 'trampoline']);
 
 const TOP_N_FACILITY = 10;
 
@@ -415,8 +424,9 @@ function getRelevantSportsFacilities(message) {
   const matchedActivities = matchActivities(text);
   const wantsRooftop = ROOFTOP_TRIGGER.test(text);
   const wantsToLearn = LEARN_TRIGGER.test(text);
+  const wantsAdventureSport = ADVENTURE_SPORT_TRIGGER.test(text);
   const explicitSignal = hasFacilityExplicitSignal(text);
-  const ownSignal = explicitSignal || matchedActivities.size > 0 || wantsToLearn;
+  const ownSignal = explicitSignal || matchedActivities.size > 0 || wantsToLearn || wantsAdventureSport;
 
   if (!ownSignal && matchedAreas.length === 0) return [];
   if (matchedNames.length > 0) {
@@ -438,6 +448,10 @@ function getRelevantSportsFacilities(message) {
   // instead, per explicit instruction.
   if (wantsToLearn) {
     results = results.filter((f) => f.operator.includes('Association'));
+    filterApplied = true;
+  }
+  if (wantsAdventureSport) {
+    results = results.filter((f) => f.activities.some((a) => ADVENTURE_SPORT_ACTIVITIES.has(a)));
     filterApplied = true;
   }
   if (matchedActivities.size > 0) {
@@ -467,8 +481,9 @@ function getRelevantGamingVenues(message) {
   const matchedNames = matchKeywords(text, GAMING_NAME_KEYWORDS, 'name');
   const matchedAreas = matchKeywords(text, AREA_KEYWORDS, 'area');
   const matchedActivities = matchActivities(text);
+  const wantsAdventureSport = ADVENTURE_SPORT_TRIGGER.test(text);
   const explicitSignal = hasGamingExplicitSignal(text);
-  const ownSignal = explicitSignal || matchedActivities.size > 0;
+  const ownSignal = explicitSignal || matchedActivities.size > 0 || wantsAdventureSport;
 
   if (!ownSignal && matchedAreas.length === 0) return [];
   if (matchedNames.length > 0) {
@@ -480,6 +495,10 @@ function getRelevantGamingVenues(message) {
 
   let results = gamingVenues;
   let filterApplied = false;
+  if (wantsAdventureSport) {
+    results = results.filter((g) => g.activities.some((a) => ADVENTURE_SPORT_ACTIVITIES.has(a)));
+    filterApplied = true;
+  }
   if (matchedActivities.size > 0) {
     results = results.filter((g) => g.activities.some((a) => matchedActivities.has(a)));
     filterApplied = true;

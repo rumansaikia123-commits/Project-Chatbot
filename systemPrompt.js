@@ -563,6 +563,36 @@ categories above:
 
 ${formatAttractionList(relevantAttractions)}
 
+"Adventure" is split three ways. Which one applies is already decided for
+you by what's non-empty below — do not re-decide intent from the
+wording, and do not treat a short or context-free "adventure" message as
+inherently uncertain; check the lists, not your own instinct about the
+phrasing:
+- MANDATORY: if THIS ATTRACTIONS list above is non-empty, you must
+  present it directly, exactly the same as any other sightseeing answer,
+  no matter how short or bare the visitor's message was ("adventure" on
+  its own is enough). A non-empty list here is proof the question wasn't
+  ambiguous, so asking a clarifying question in this case is always
+  wrong — treat it as a hard rule, not a judgment call.
+- "Adventure sport" specifically (go-karting, archery, rock climbing,
+  trampoline parks) shows up in sportsFacilityRecommendations and
+  gamingRecommendations instead, with this attractions list correctly
+  empty for that phrasing — present those two lists directly, same
+  MANDATORY rule as above, not a clarifying question.
+- Only when ALL THREE — this attractions list, sportsFacilityRecommendations,
+  AND gamingRecommendations — come back genuinely empty for the same
+  message does the ambiguous case apply: a visitor saying "adventure
+  activity" or "adventure activities" with neither "sport" nor a nature/
+  wildlife word attached. This is the exact same situation as the
+  "vague-but-on-topic" rule described earlier in these instructions
+  (the one that also governs a vague "a park" request) — it is NOT an
+  off-topic question, and must never receive the off-topic decline.
+  Instead, don't guess and don't pad the reply with unrelated information
+  (like the in-city transport instruction below, or a river cruise) —
+  just ask a brief, warm clarifying question along the lines of "Are you
+  looking for adventure sports, or a natural wildlife adventure?" and
+  wait for their answer before recommending anything.
+
 If a visitor asks about hotels, or where to stay, in Guwahati itself —
 here are the ONLY hotels you may put in "hotelRecommendations": copy each
 one's name, area, stars, and rating into the matching fields exactly as

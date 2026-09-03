@@ -1797,6 +1797,82 @@ nightlife venues stay as plain text for now.
       learn) still unaffected; gaming, named temple lookup, and the
       off-topic decline all still correct
 
+## Split "adventure sport" from wildlife/nature attractions (2026-09-03)
+- [x] User tested "I want adventure sport in Guwahati" and got a mix of
+      wildlife safaris and museum attractions (Pobitora, Guwahati
+      Ropeway, Guwahati Planetarium, etc.) — none of which are actually
+      sports. Discussed and confirmed a three-way split before building:
+      bare "adventure"/"nature" keeps the existing wildlife/scenic
+      attractions; "adventure sport" specifically routes to the real
+      physical activities in sports.js instead (go-karting, archery,
+      PUNO's rock climbing/obstacle course/trampoline); the genuinely
+      ambiguous phrase "adventure activity/activities" (no "sport", no
+      nature/wildlife word) asks a brief clarifying question instead of
+      guessing — "Are you looking for adventure sports, or a natural
+      wildlife adventure?" — the same pattern parks.js already uses for
+      a vague park request
+- [x] Found and fixed a real mistagging while building this: Guwahati
+      Planetarium and Regional Science Centre were both tagged
+      `adventure-activity` in attractions.js, which is wrong — neither is
+      an adventure activity. Root cause: the theme's own keyword pattern
+      matched the bare word "activity"/"activities" on its own, far too
+      generic. Narrowed to just the word "adventure" (bare "nature"
+      already has its own separate, correctly-scoped theme tag, so
+      nothing lost there) and removed the incorrect tag from both entries
+- [x] Implementation: added a curated `ADVENTURE_SPORT_ACTIVITIES` set in
+      sports.js (go-karting, archery, rock-climbing, obstacle-course,
+      trampoline) spanning both sportsFacilities and gamingVenues — "I
+      want adventure sport" now correctly blends Warisa Estate/LAPX
+      Go-Karting + Assam Archery Club (facilities) with PUNO Advance
+      (gaming) in one answer. attractions.js short-circuits to empty for
+      both "adventure sport" (routes elsewhere) and the bare ambiguous
+      phrase (needs a clarifying question), while leaving bare "adventure"
+      and "nature" matching exactly as before
+- [x] Bug found and fixed during my own pre-live testing: the ambiguous
+      "adventure activity" case didn't reliably produce the intended
+      clarifying question — Gemini often padded the reply with unrelated
+      content instead (a river cruise mention, the in-city transport
+      instruction) rather than asking. Fixed by adding an explicit
+      guardrail paragraph naming the exact clarifying question to ask and
+      instructing against padding with unrelated content
+- [x] Second bug found during the same testing pass, this one only
+      partially resolved: after adding that paragraph, a bare "I want
+      some adventure" — no "Guwahati," no other context — started
+      wrongly triggering the SAME clarifying question, even though real
+      wildlife/nature data was available and correctly provided. Reworded
+      the guardrail to explicitly key off which array is actually
+      non-empty rather than re-deciding intent from the wording. This
+      fixed the realistic phrasing reliably — "I want some adventure IN
+      GUWAHATI" now works correctly 5/5 live attempts — but the
+      zero-context bare phrasing (no "Guwahati," no other words at all)
+      remains unreliable (~1/5 correct), and the ambiguous-clarifying-
+      question case itself still occasionally (1/5 in testing) falls
+      into the general off-topic decline instead of asking its intended
+      question. Both remaining gaps match this project's already-
+      documented `gemini-3.5-flash-lite` response-randomness limitation
+      (temperature 0.2 reduces but doesn't eliminate it) rather than a
+      further code-fixable issue — flagged honestly rather than claiming
+      full reliability
+- [x] User asked me to keep iterating on the two residual gaps, up to 3
+      attempts. Fixed on the FIRST attempt — reworded the guardrail two
+      ways: made the "non-empty list → always present it, never ask"
+      rule explicitly MANDATORY rather than a soft preference, and tied
+      the ambiguous-clarifying-question case back to the EXISTING general
+      "vague-but-on-topic ≠ off-topic" rule (the one already governing
+      parks) instead of treating it as a brand-new, isolated instruction
+      competing for attention against the general off-topic-decline rule
+- [x] Verified live: bare "I want some adventure" with zero other
+      context now correctly returns real attraction data 5/5 (previously
+      ~1/5); the ambiguous "adventure activities" case now correctly asks
+      the intended clarifying question 5/5 (previously mixed between
+      correct/off-topic-decline/padded-non-answer). Full regression pass
+      (9 different questions, one re-run after an apparent one-off flake
+      on "wildlife" cleanly reproduced as 3/3 correct) confirms "adventure
+      sport," "where can I see wildlife," "what should I do/see," "learn
+      tennis," "where can I play cricket," the park clarifying-question
+      behavior, a named temple lookup, and the genuine off-topic decline
+      are all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
