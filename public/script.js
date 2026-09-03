@@ -165,6 +165,26 @@ function addRecommendationCards(recommendations) {
       type.className = 'rec-rating';
       type.textContent = rec.type;
       meta.appendChild(type);
+    } else if ('emergency' in rec) {
+      // Hospitals: emergency status shown as a real, honest label rather
+      // than a flat "24/7" for entries the source itself only "lists" or
+      // flags as unverified — matches the same distinction the reply
+      // text is required to preserve.
+      const EMERGENCY_LABELS = {
+        '24x7': '24×7 (confirmed)',
+        '24x7-listed': '24×7 listed (not verified)',
+        verify: 'Call ahead to verify',
+        'verify-clinical-hours': 'Call ahead — hours not verified',
+      };
+      const emergency = document.createElement('span');
+      emergency.className = 'rec-rating';
+      emergency.textContent = EMERGENCY_LABELS[rec.emergency] || rec.emergency;
+      meta.appendChild(emergency);
+
+      const tier = document.createElement('span');
+      tier.className = 'rec-cost';
+      tier.textContent = rec.tier;
+      meta.appendChild(tier);
     } else if ('stars' in rec) {
       // Hotels/resorts: stars and rating may each legitimately be null
       // ("not verified" in the source data) — show that honestly instead
@@ -282,6 +302,7 @@ function renderRecommendations(data) {
     data.transportHubRecommendations,
     data.cabServiceRecommendations,
     data.selfDriveRecommendations,
+    data.hospitalRecommendations,
   ];
   const all = categories.flat();
   const hasSequence = all.some((rec) => rec.order != null);

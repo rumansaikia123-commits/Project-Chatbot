@@ -200,10 +200,30 @@ function formatContactList(businesses) {
     .join('\n\n');
 }
 
+// Turns a list of matched hospitals (from hospitals.js) into a text
+// block for the prompt. The emergency field's four real values are shown
+// as distinct labels, not collapsed into a single "open 24/7" fact — the
+// honesty distinction the source document itself already draws.
+function formatHospitalList(hospitals) {
+  if (hospitals.length === 0) return '(none relevant to this question)';
+  const EMERGENCY_LABELS = {
+    '24x7': 'Emergency: 24x7 (confirmed)',
+    '24x7-listed': 'Emergency: 24x7 listed (not independently verified)',
+    verify: 'Emergency availability: not verified — call ahead',
+    'verify-clinical-hours': 'Clinical hours not verified — call ahead',
+  };
+  return hospitals
+    .map((h) => {
+      const ownership = h.ownership != null ? h.ownership : 'ownership not stated in source';
+      return `- ${h.name} (${h.area}) [${ownership}, ${h.tier}]\n  ${EMERGENCY_LABELS[h.emergency] || h.emergency}\n  Specialties: ${h.specialties.length > 0 ? h.specialties.join(', ') : '(none itemised in source)'}\n  Highlight: ${h.highlight}`;
+    })
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -713,12 +733,50 @@ are all available in Guwahati. Never invent a specific bus route number,
 fare, or app-specific detail — this app has no data for those, only the
 general fact that these options exist.
 
+If a visitor asks about a hospital, medical care, or a specific medical
+specialty — here are the ONLY hospitals you may put in
+"hospitalRecommendations": copy name, area, ownership, tier, emergency
+status, and highlight exactly; the "Specialties" line for each hospital
+below goes into that hospital's "activities" field verbatim (yes,
+"activities" — the same field name every other category's tag chip
+uses, reused here rather than adding a new one). This is the most
+safety-sensitive category in this app, so the following rules are not
+optional:
+- Whenever this list is non-empty, or whenever a visitor's message is
+  about hospitals/medical care in any way, lead "reply" with a brief,
+  warm line that for a genuine medical emergency they should call 108 or
+  go to the nearest hospital immediately. This is a standing rule, not a
+  judgment call about whether THIS particular message sounds urgent —
+  always include it.
+- The emergency status must be presented exactly as labeled below —
+  "24x7 (confirmed)" may be stated plainly, but "24x7 listed (not
+  independently verified)" and anything saying "not verified" must be
+  presented with real hedging ("said to offer 24/7 care, but call ahead
+  to confirm" — never rounded up to a flat, confident "open 24/7").
+- Never invent bed availability, current wait times, doctor names, or
+  insurance/payment details — this app has no live data for those.
+- This is a pure directory of which hospitals have which specialty
+  departments — NEVER infer a specialty from a symptom the visitor
+  describes ("chest pain," "can't breathe," "bleeding"), never make a
+  clinical recommendation, and never imply a diagnosis. If a visitor
+  describes symptoms or asks what's wrong with them or which hospital is
+  "best" for their condition, gently decline that specific framing —
+  explain you can't advise on symptoms, suggest describing the specialty/
+  department they're looking for instead (e.g. "cardiology," "an eye
+  specialist"), and repeat the 108 guidance if it sounds at all urgent.
+- If THIS HOSPITAL list below is empty, leave "hospitalRecommendations"
+  empty — same "could just be no match for this specific ask, stay
+  helpful" reasoning as every other category above:
+
+${formatHospitalList(relevantHospitals)}
+
 None of hotelRecommendations, resortRecommendations,
 homestayRecommendations, transportHubRecommendations,
-cabServiceRecommendations, or selfDriveRecommendations use "day" or
-"order" — unlike every other recommendation category, a place to stay or
-a way of travelling isn't a sequenced daily activity, so never try to tag
-one with a day or position in a plan.
+cabServiceRecommendations, selfDriveRecommendations, or
+hospitalRecommendations use "day" or "order" — unlike every other
+recommendation category, a place to stay, a way of travelling, or a
+hospital isn't a sequenced daily activity, so never try to tag one with a
+day or position in a plan.
 
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"

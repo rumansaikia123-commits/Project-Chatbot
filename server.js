@@ -17,6 +17,7 @@ const { getRelevantAttractions } = require('./attractions');
 const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require('./accommodations');
 const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues } = require('./sports');
 const { getRelevantTransportHubs, getRelevantCabServices, getRelevantSelfDriveServices } = require('./transport');
+const { getRelevantHospitals } = require('./hospitals');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -339,8 +340,26 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'phone', 'highlight'],
       },
     },
+    hospitalRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Hospitals being recommended in this reply. Empty if this reply is not recommending one. This is a pure directory lookup — never infer a specialty from a described symptom, never make a clinical judgment or imply a diagnosis, and never invent bed availability, wait times, doctor names, or insurance/payment details.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          ownership: { type: Type.STRING, nullable: true },
+          tier: { type: Type.STRING },
+          emergency: { type: Type.STRING },
+          activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'tier', 'emergency', 'activities', 'highlight'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations', 'transportHubRecommendations', 'cabServiceRecommendations', 'selfDriveRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations', 'transportHubRecommendations', 'cabServiceRecommendations', 'selfDriveRecommendations', 'hospitalRecommendations'],
 };
 
 const app = express();
@@ -436,6 +455,7 @@ app.post('/api/chat', async (req, res) => {
     const relevantTransportHubs = getRelevantTransportHubs(allVisitorText);
     const relevantCabServices = getRelevantCabServices(allVisitorText);
     const relevantSelfDriveServices = getRelevantSelfDriveServices(allVisitorText);
+    const relevantHospitals = getRelevantHospitals(allVisitorText);
     // Temples' own area names (hill/locality) are folded into the text
     // restaurants.js sees, purely so its existing area-keyword matching can
     // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
@@ -454,7 +474,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals),
         // Raised from 2048: a broad "market" question now returns all 16
         // real market entries with full text fields, which needs ~2,400
         // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON
@@ -489,7 +509,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [], transportHubRecommendations: [], cabServiceRecommendations: [], selfDriveRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [], transportHubRecommendations: [], cabServiceRecommendations: [], selfDriveRecommendations: [], hospitalRecommendations: [] };
     }
 
     res.json({
@@ -510,6 +530,7 @@ app.post('/api/chat', async (req, res) => {
       transportHubRecommendations: parsed.transportHubRecommendations,
       cabServiceRecommendations: parsed.cabServiceRecommendations,
       selfDriveRecommendations: parsed.selfDriveRecommendations,
+      hospitalRecommendations: parsed.hospitalRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

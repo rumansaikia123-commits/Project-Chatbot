@@ -1873,6 +1873,78 @@ nightlife venues stay as plain text for now.
       behavior, a named temple lookup, and the genuine off-topic decline
       are all unaffected
 
+## Added hospitals as a new category — area + specialty matching (2026-09-03)
+- [x] User shared a Guwahati hospitals research document (30 hospitals)
+      and asked if it made sense. This is the first category with real
+      safety stakes, so three things were discussed and confirmed before
+      building anything: (1) the bot always includes a brief "call 108
+      for a genuine emergency" line whenever hospital data is involved;
+      (2) the source's own honest distinction between plain "24×7",
+      "24×7 listed" (unverified), and "Verify"/"Verify clinical hours"
+      is preserved as real data, never collapsed into one confident
+      claim; (3) no clinical judgment ever — confirmed via a direct
+      question that matching fires ONLY on a hospital's own specialty
+      words a visitor names directly ("cardiology," "eye hospital"),
+      never on a described symptom ("chest pain"), which would edge into
+      medical triage
+- [x] User's actual feature request: match by area (same pattern as
+      every prior category) AND by specialty keyword — e.g. "stroke"
+      should point specifically at GNRC Hospitals, since its own real
+      "Key Specialities" text literally says "Neurosciences; stroke;
+      trauma; emergency; multispeciality." Confirmed this is
+      straightforward, not "too wide" — the same AND-combination pattern
+      already proven in restaurants.js (cuisine+area) and sports.js
+      (activity+area)
+- [x] Built `hospitals.js` (one flat array + one matching function,
+      unlike the multi-group files — a visitor doesn't think in terms of
+      the source's 11 Category labels, tier is just a filter/fallback
+      field). Hand-extracted a canonical `specialties` array per hospital
+      from each one's real "Key Specialities" text — generic filler
+      ("35 departments," "multispeciality," "newer tertiary facility")
+      stays in highlight text only, never becomes a fake matchable tag.
+      4 entries (Sri Sankaradeva Nethralaya, Pragjyoti Eye Care,
+      Institute of Human Reproduction, ASG Eye Hospital) genuinely have
+      no Private/Government ownership stated in the source — left as
+      `ownership: null` rather than guessed. No day/order fields — going
+      to a hospital isn't a leisure itinerary stop, same reasoning as
+      accommodations.js/transport.js
+- [x] `server.js`/`systemPrompt.js`/`public/script.js`: wired the same
+      mechanical way as every prior category. Reused the `activities`
+      field name for the specialties array (schema-facing only — the
+      internal data model still calls it `specialties`) purely to avoid
+      a `getTagField` edit, same trick already used for sports.js. New
+      `'emergency' in rec` card branch shows the emergency status as an
+      honest label (e.g. "Call ahead — hours not verified") rather than
+      a flat confident string
+- [x] Verified live: "hospital in GS Road" → the 4 real GS-Road-area
+      hospitals; "which hospital treats stroke" → GNRC Hospitals –
+      Dispur Unit specifically, matching the user's own worked example
+      exactly; "cardiac hospital in Christian Basti" → Apollo only
+      (AND-combination, not OR); a vague "which hospital should I go to"
+      → the real tertiary-referral/super-speciality fallback set, not
+      all 30; a named lookup ("GMCH") → exactly one result; a
+      "verify"-flagged entry (Sri Sankaradeva Nethralaya) correctly got
+      real hedging ("clinical hours here are not verified, call ahead")
+      rather than a confident claim, while GMCH's genuinely-confirmed
+      24x7 status was stated plainly, showing the distinction actually
+      holds end-to-end, not just in the data file
+- [x] Safety check: "I have chest pain, which hospital should I go to?"
+      correctly declined to diagnose ("I cannot advise on symptoms") and
+      included the 108/nearest-hospital line. One honest nuance found,
+      not a failure exactly: the DATA layer never matched "chest pain" to
+      any specialty (confirmed — no symptom vocabulary exists in
+      `SPECIALTY_KEYWORDS`), but Gemini, given the vague-fallback set of
+      6 real hospitals, chose to present only the 3 cardiac-tagged ones
+      rather than the full set — a soft echo of symptom-awareness in its
+      own downstream reasoning even though the underlying matching logic
+      stayed correctly symptom-blind. Not a dangerous failure (it never
+      claimed a hospital was "best" for chest pain, and it explicitly
+      declined to diagnose), but noted honestly rather than claiming the
+      system is symptom-blind end-to-end
+- [x] Full regression pass: temples, restaurants, hotels, sports,
+      transport, adventure sport, and a genuinely off-topic question —
+      all show zero hospital-data leakage and are otherwise unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
