@@ -56,9 +56,9 @@ const attractions = [
     themes: ['temple-religious', 'historical-site', 'cultural-centre', 'viewpoint'],
     highlight: "Guwahati's defining landmark and one of Assam's major pilgrimage destinations." },
 
-  { name: 'Brahmaputra River Experience', area: 'Guwahati', tier: 1, rank: 2, distanceFromDispur: '~8-12 km',
+  { name: 'Alfresco Grand', area: 'Gateway of Guwahati Terminal, Pan Bazaar (winter) / Uzan Bazaar (summer)', tier: 1, rank: 2, distanceFromDispur: '~8-12 km',
     themes: ['river-experience', 'scenic-nature'],
-    highlight: 'Experience the Brahmaputra through riverfronts, sunset views, boats and cruises.' },
+    highlight: 'The largest and most popular cruise on the Brahmaputra — sunset, sundown, and dinner sailings, with live music and a buffet on the dinner cruise. Pricing and exact schedules vary by source, so verify current details when booking.' },
 
   { ...fromTemple('Umananda Temple'), tier: 1, rank: 3, distanceFromDispur: '~10 km',
     themes: ['temple-religious', 'river-experience', 'scenic-nature', 'historical-site'],
@@ -194,6 +194,27 @@ const attractions = [
   { name: 'Highest View Point, Jorabat', area: 'Jorabat', tier: 3, rank: 35, distanceFromDispur: '~25 km',
     themes: ['viewpoint', 'scenic-nature'],
     highlight: 'Elevated roadside viewpoint around the Guwahati-Meghalaya gateway.' },
+
+  // Three more real cruise operators, researched directly (not from a
+  // source document) — kept at Tier 2 rather than Tier 1 alongside
+  // Alfresco Grand, since Alfresco is the single most recognized name
+  // among them and Tier 1 already had a full, deliberate set of 9 places.
+  { name: 'Star Cruise Brahmaputra', area: 'Gateway Terminal, Fancy Bazaar', tier: 2, rank: 36, distanceFromDispur: '~8-12 km',
+    themes: ['river-experience', 'scenic-nature'],
+    highlight: 'A well-established cruise operator offering sunset, lunch, and dinner sailings, plus newer full-day island-excursion packages to Umananda and Lenga River Island. Phone: +91-7577966666.' },
+
+  { name: 'MV Kohuwa Bon', area: 'Gateway Terminal, Fancy Bazaar', tier: 2, rank: 37, distanceFromDispur: '~8-12 km',
+    themes: ['river-experience', 'scenic-nature'],
+    highlight: 'A boutique twin-deck houseboat cruise with Assamese-inspired cabin interiors, live music, and complimentary snacks — the highest-rated of the short Brahmaputra cruises.' },
+
+  // Tier 3, not Tier 2: unlike the three cruises above (each a same-day
+  // evening outing), this is a multi-night commitment and genuinely a
+  // different kind of trip, not a quick addition to a short Guwahati
+  // visit — reflected honestly in its highlight text below rather than
+  // implying it fits into a single day's plan.
+  { name: 'MV Mahabaahu', area: 'Pandu Port', tier: 3, rank: 38, distanceFromDispur: '~10 km',
+    themes: ['river-experience', 'scenic-nature'],
+    highlight: 'A multi-night luxury river cruise (2-7 nights) between Guwahati and Jorhat, with en-suite cabins, a pool, spa, and guided Kaziranga wildlife excursions along the way — a separate multi-day trip in its own right, not a same-day activity, and only runs October-April. Contact: 098118 40940.' },
 ];
 
 // Never name-matchable in this file — guarantees the deliberate exclusion
@@ -208,7 +229,16 @@ const CROSS_REFERENCED_NAMES = new Set([
 ]);
 
 const NAME_KEYWORDS = [
-  { pattern: /river\s?experience|river\s?cruise|sunset\s?cruise/, name: 'Brahmaputra River Experience' },
+  // Deliberately no generic "river cruise"/"sunset cruise" pattern here —
+  // a name match narrows EXCLUSIVELY to that one entry, so a generic
+  // phrase like that would wrongly hide the other three real cruises. A
+  // genuinely generic cruise question is left to fall through to the
+  // theme match instead ('river-experience', which "cruise"/"boat"
+  // already trigger below), correctly surfacing all four real operators.
+  { pattern: /alfresco\s?grand/, name: 'Alfresco Grand' },
+  { pattern: /star\s?cruise(\s?brahmaputra)?/, name: 'Star Cruise Brahmaputra' },
+  { pattern: /kohuwa\s?bon/, name: 'MV Kohuwa Bon' },
+  { pattern: /mahabaahu/, name: 'MV Mahabaahu' },
   { pattern: /assam\s?state\s?zoo|\bzoo\b|botanical\s?garden/, name: 'Assam State Zoo cum Botanical Garden' },
   { pattern: /pobitora/, name: 'Pobitora Wildlife Sanctuary' },
   { pattern: /sankaradeva|kalakshetra/, name: 'Srimanta Sankaradeva Kalakshetra' },
@@ -247,7 +277,7 @@ const THEME_KEYWORDS = [
   { pattern: /\bmuseum\b|\bheritage\b/, theme: 'museum-heritage' },
   { pattern: /\bcultural\b|\bculture\b/, theme: 'cultural-centre' },
   { pattern: /viewpoint|view\s?point/, theme: 'viewpoint' },
-  { pattern: /\bcruise\b|\bboat(ing)?\b|riverfront/, theme: 'river-experience' },
+  { pattern: /\bcruises?\b|\bboat(ing)?\b|riverfront/, theme: 'river-experience' },
   { pattern: /\bscenic\b|\bnature\b|natural/, theme: 'scenic-nature' },
   { pattern: /\bzoo\b|botanical\s?garden/, theme: 'zoo-botanical-garden' },
   { pattern: /wildlife|sanctuary|safari|\brhino/, theme: 'wildlife-sanctuary' },
@@ -282,12 +312,15 @@ const AREA_KEYWORDS = [
   { pattern: /jorabat/, area: 'Jorabat' },
 ];
 
-// Deliberately permissive on "see"/"visit"/"explore" phrasing — real
+// Deliberately permissive on "see"/"do"/"visit"/"explore" phrasing — real
 // visitors ask this many different ways ("what should I see," "what can
 // I see," "things to see," "where to explore"), not just the one exact
-// phrase "what to see."
+// phrase "what to see." Found missing during testing: "what should I do
+// in Guwahati" (an extremely natural phrasing) originally matched
+// nothing at all, since "do" was only allowed after "things to ___", not
+// after "what should/can/to (i) ___" — added it there too.
 const SIGHTSEEING_TRIGGER =
-  /\bsightseeing\b|things?\s?to\s?(do|see)|places?\s?to\s?(see|visit|explore)|what\s?(should|can|to)\s?(i\s?)?(see|visit|explore)|\battractions?\b|\bexcursions?\b|day\s?trips?|\bexplore\b/;
+  /\bsightseeing\b|things?\s?to\s?(do|see)|places?\s?to\s?(see|visit|explore)|what\s?(should|can|to)\s?(i\s?)?(do|see|visit|explore)|\battractions?\b|\bexcursions?\b|day\s?trips?|\bexplore\b/;
 
 const TOP_N = 10;
 

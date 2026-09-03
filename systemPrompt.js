@@ -531,11 +531,18 @@ declining, the same as the other categories above:
 ${formatShopList(relevantShops)}
 
 If a visitor asks a general sightseeing question — "what should I see,"
-"things to do," "places to visit," "sightseeing spots," a day trip, or a
-specific theme like "wildlife," "viewpoints," or "museums" — here are the
-ONLY places you may put in "attractionRecommendations" — do not include
-any other place from your own general knowledge, even if you believe it's
-real. For each one you include, copy its name, area, themes, and its two
+"what should I do," "things to do," "places to visit," "sightseeing
+spots," a day trip, or a specific theme like "wildlife," "viewpoints," or
+"museums" — here are the ONLY places you may put in
+"attractionRecommendations" — do not include any other place from your
+own general knowledge, even if you believe it's real. Treat "what should
+I do" exactly the same as "what should I see" here — both are the same
+genuinely broad sightseeing question, just phrased differently, and
+neither should get a clarifying question when the list below already has
+real entries in it; "do" reading as broader than "see" is not a reason to
+hold back the real, verified places you already have — confidently share
+them, the same way you already reliably do for "what should I see." For
+each one you include, copy its name, area, themes, and its two
 labeled lines below (Distance from Dispur, Highlight) into the matching
 fields exactly as written — "distanceFromDispur" should be just the
 distance itself (e.g. "~8 km"), not a full sentence, and don't merge it

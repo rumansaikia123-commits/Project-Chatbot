@@ -1634,6 +1634,95 @@ nightlife venues stay as plain text for now.
       temple-timing honesty / temple lookups / the football-hockey
       partial-answer fix from earlier today are all unaffected
 
+## Added real Brahmaputra cruises into attractions.js (2026-09-03)
+- [x] After researching several real cruise operators (Alfresco Grand,
+      Star Cruise Brahmaputra, MV Kohuwa Bon, MV Mahabaahu) and building
+      a comparison table together, discussed where this data belongs.
+      Decided (confirmed with the user): logistics questions ("how do I
+      get to Umananda") stay answered by the existing transport.js ferry
+      data; genuine activity/experience questions ("what cruises are
+      there", "what should I do in Guwahati", a multi-day itinerary)
+      belong in attractions.js instead, since cruises are itinerary-
+      eligible activities (day/order tagging) the same way a temple visit
+      or a sports facility is — unlike transport.js's hubs, which
+      deliberately have no day/order
+- [x] Replaced the old placeholder "Brahmaputra River Experience" entry
+      (a single vague line with no real operator detail) with 4 real
+      entries: Alfresco Grand (Tier 1, reusing the vacated rank-2 slot —
+      no renumbering needed since it's a straight 1-for-1 swap), Star
+      Cruise Brahmaputra and MV Kohuwa Bon (Tier 2), and MV Mahabaahu
+      (Tier 3 — deliberately not Tier 2 alongside the other three, since
+      it's a 2-7 *night* commitment, not a same-day outing, and its
+      highlight text says so plainly rather than implying it fits into a
+      short visit)
+- [x] Bug found and fixed during my own pre-live testing: the
+      NAME_KEYWORDS entry for the old placeholder entry (`river
+      experience|river cruise|sunset cruise`) still existed and pointed
+      to a now-renamed/removed entry — worse, being a NAME match, it
+      would have exclusively narrowed a generic "what cruises are there"
+      question down to just one operator, hiding the other three real
+      cruises entirely. Removed the generic phrase from NAME_KEYWORDS
+      (name-matches are for actual venue names only) and added the 4
+      real operator names instead; a genuinely generic cruise question
+      now correctly falls through to the existing 'river-experience'
+      theme match, surfacing all four real operators together
+- [x] Second bug found the same way: "what cruises are THERE" (plural)
+      matched nothing at all — the THEME_KEYWORDS pattern for
+      'river-experience' used `\bcruise\b`, which (same plural-word bug
+      class hit several times earlier this project — cafes, bars,
+      dance/club) fails on the plural since the trailing `\b` isn't a
+      boundary right before a following "s". Fixed to `\bcruises?\b`
+- [x] Verified live: "what cruises are there and their details" now
+      correctly returns exactly the 4 real operators (not the tangential
+      Ropeway/Heritage-Centre entries also tagged 'river-experience' —
+      confirmed Gemini reasonably excludes those on its own even though
+      they're in the candidate list); "how do I get to Umananda" still
+      correctly stays a ferry/logistics answer with zero cruise leakage;
+      named lookups for all 4 operators correct; a 2-day itinerary
+      request correctly slotted Alfresco Grand into Day 1 with a real
+      order position alongside the Ropeway and Heritage Centre
+- [x] **Found a separate, real gap while testing, unrelated to cruises
+      specifically — reported rather than silently fixed given the
+      broader scope it touches**: "what should I SEE in Guwahati"
+      reliably uses the Tier-1 fallback (3/3 live attempts, 5-9 real
+      attraction cards each time), but "what should I DO in Guwahati" —
+      an equally natural phrasing — reliably does NOT (0/3 live attempts,
+      always a vague non-answer or clarifying question), even though the
+      exact same 9 real Tier-1 candidates are available either way after
+      fixing SIGHTSEEING_TRIGGER to recognize "do" (which itself was a
+      real, separate bug: the trigger only allowed "do" after "things to
+      ___", not after "what should/can/to (i) ___" — fixed, verified the
+      data layer now correctly returns 9 candidates for "what should I
+      do" too). The REMAINING gap (Gemini not reliably using those
+      candidates for "do" phrasing specifically) is likely because "do"
+      is genuinely broader than "see" in English — arguably a "what
+      should I do" question ideally deserves a blend across attractions,
+      food, and nightlife together, not just a narrower attractions-only
+      answer, so this may need real system-prompt design thought rather
+      than a quick fix. Flagged for the user's decision, not fixed here
+- [x] Full regression pass: temples, parks, restaurants, hotels, sports,
+      transport, and a genuinely off-topic question — all unaffected
+- [x] User asked me to fix the "what should I do" gap directly. Checked
+      first whether other categories (temples/restaurants/nightlife/
+      parks/shops/sports) had any real candidate data available for a
+      purely generic "what should I do in Guwahati" message — none do,
+      each requires its own specific keyword the generic phrasing doesn't
+      contain — so the real fix wasn't "blend more categories," it was
+      making Gemini reliably use the one real candidate list it already
+      had (attractions' Tier-1 fallback) for "do" phrasing the same way
+      it already reliably does for "see" phrasing
+- [x] Fixed in `systemPrompt.js`'s attractions guardrail: explicitly
+      states "what should I do" and "what should I see" are the same
+      question and should get the same confident answer, and that "do"
+      reading as broader than "see" is not a reason to hold back real,
+      already-verified places
+- [x] Verified live: "what should I do in Guwahati?" now returns all 9
+      real Tier-1 attractions 5/5 attempts (previously 0/3). Regression
+      pass confirmed "what should I see" still works, the vague-park
+      clarifying-question behavior is unaffected (making attractions more
+      assertive didn't make parks less willing to ask its own clarifying
+      question), and cruises/temples/off-topic decline all still correct
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
