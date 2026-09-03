@@ -1221,6 +1221,188 @@ nightlife venues stay as plain text for now.
       the 6 cross-referenced places), nightlife, and a genuinely off-topic
       question (still correctly declined) — all unaffected
 
+## Added hotels, resorts, and homestays/Airbnb as three new categories (2026-09-03)
+- [x] User shared a well-structured Guwahati accommodation research
+      document: a Hotels table (13 localities, ranked 1-3 per locality),
+      a Resorts table (5 out-of-town clusters — Sonapur/Tepesia,
+      Khanapara/GS Road, Chandrapur, Pobitora/Mayong, Amsing/Jorabat), and
+      a Guest House/Airbnb table (25 flat-ranked stays with real review
+      counts). Discussed before building anything; user decided: (1)
+      research and resolve address conflicts myself rather than storing
+      duplicates, (2) treat "Not Verified" fields as `null`, never as a
+      reason to drop an entry, (3) keep hotels/resorts/homestays as three
+      independent matchable groups rather than one merged list, (4) skip
+      itinerary day/order tagging for this category entirely — a place to
+      stay isn't a sequenced daily activity the way a temple visit or a
+      restaurant is
+- [x] Found real cross-locality duplicates: several hotels were listed
+      more than once because their address genuinely borders two of the
+      document's locality buckets (e.g. Novotel Guwahati GS Road under
+      both "GS Road" and "Dispur"). Stored each hotel ONCE with an
+      internal `areaTags` array covering every locality it belongs to,
+      rather than duplicate objects — the exact class of bug that already
+      caused a real one-off fix this project (Chakkranosh's address
+      disagreeing between restaurants.js and venues.js)
+- [x] Three of the duplicates actually disagreed on the real address, so
+      merging the document's own two rows wasn't enough — used WebSearch
+      to resolve them: Hotel Gateway Grandeur confirmed at GS Road,
+      Christian Basti (not "Dispur-side"); Hotel Nandan confirmed at
+      Paltan Bazaar/Old GS Road (the document's own Ulubari-table
+      placement was simply wrong, so no Ulubari tag was kept for it)
+- [x] Found a second, undiscussed duplicate while re-reading the document
+      to plan this: "The Greenwood" appears in BOTH the Hotel table
+      (Beltola, 4-Star, 4.4/5) and the Resort table as "The Greenwood,
+      Guwahati" (Khanapara/GS Road cluster, "Urban Resort/Boutique",
+      3-Star*, 4.4/5) — same rating, adjacent address, and the Resort
+      table's own star figure was already flagged uncertain. Confirmed
+      via WebSearch it's one real property, branded "A Luxury Boutique
+      Hotel" at Beltola Tiniali — stored once, in Hotels (a genuine
+      in-city address, not an outlying resort), not duplicated into
+      Resorts
+- [x] Built `accommodations.js` (one file for all three groups, since
+      they share the same locality vocabulary and "AI Notes -> highlight"
+      cleaning approach): 33 unique hotels, 20 resorts (the Khanapara/GS
+      Road cluster's Greenwood entry excluded, merged into hotels
+      instead), 25 homestays/Airbnb. `getRelevantHotels()` falls back to
+      each locality's rank-1 pick for a vague question (the document's
+      own per-locality ranking plays the same role Tier 1 plays in
+      temples.js); `getRelevantResorts()` AND-combines a normalized
+      `experienceTypes` tag (wildlife/eco/nature/luxury/riverside/
+      lake-view/family/boutique/village, hand-normalized from the messy
+      "Resort Experience" source column, same approach used for
+      nightlife's typeOfPlace/musicVibe rebuild) with a cluster match,
+      falling back to each cluster's rank-1 pick when vague;
+      `getRelevantHomestays()` has no natural tiering in its source data,
+      so it falls back to the top 5 by rating instead (restaurants.js's
+      TOP_N pattern)
+- [x] Bug found and fixed during my own pre-live testing: `HOTEL_TRIGGER`
+      originally included `stay(ing)? + at/in/near` specifically to avoid
+      over-triggering on generic phrasing — but "planning a 3 day **stay
+      in** Guwahati" (a totally unrelated way to describe a trip's
+      length) matched it anyway and wrongly returned 11 hotels. Removed
+      that clause entirely; a genuine "where can I stay near Kamakhya"
+      question is still caught two other ways (the fixed "where...stay"
+      phrase, or because "Kamakhya" is already a real area-keyword match
+      on its own). Reverified: the itinerary-duration phrasing now
+      correctly matches nothing, while genuine stay-near-a-place
+      questions still work
+- [x] `server.js`: added `hotelRecommendations`/`resortRecommendations`/
+      `homestayRecommendations` to `CHAT_RESPONSE_SCHEMA` — the first
+      three category arrays with no `day`/`order` fields at all; both
+      never state live room availability or current pricing (this app
+      has no live data for those, same honesty carve-out as cinema
+      showtimes and shop tenant hours)
+- [x] `systemPrompt.js`: added `formatStayList()` (shared by hotels and
+      resorts, since both have the same shape) and `formatHomestayList()`,
+      plus three guardrail paragraphs; resorts explicitly framed as a
+      getaway/day-trip outside Guwahati proper, never confused with the
+      in-city hotel list
+- [x] `public/script.js`: added the three new arrays to
+      `renderRecommendations()`'s category list (no special-casing needed
+      — `hasSequence`/`hasDays` are computed across all categories
+      together, and these three simply never carry `order`/`day`); added
+      two new `addRecommendationCards` meta-row branches — `'stars' in
+      rec'` for hotels/resorts (stars + rating, each shown as "not
+      verified" rather than blank or invented when null) and
+      `'reviewCount' in rec'` for homestays (rating + review count)
+- [x] Verified live against a fresh server: Novotel/Gateway Grandeur/The
+      Greenwood/The Ornate/Baruah Bhavan Guest House/The Lily Hotel all
+      correctly return as exactly ONE result each (not two), confirming
+      the dedup holds through the full pipeline, not just the data layer;
+      "hotels near the airport" correctly returned both a real airport
+      hotel and a real airport-area homestay; "best hotels in Guwahati?"
+      returned exactly the 11 locality-rank-1 hotels; "wildlife resort
+      near Guwahati" returned only the 6 real wildlife-tagged resorts;
+      "any good airbnb near Kamakhya?" returned only the 4 real
+      Kamakhya-area homestays, no hotels mixed in; asking about live room
+      availability/pricing correctly got an honest "no live data" answer
+      instead of an invented one; confirmed the resort's internal
+      `location` field correctly reaches the frontend as `area` (the
+      schema's own field name) end-to-end, not left blank
+- [x] Full regression pass against a fresh server: temples (named),
+      parks (vague clarifying-question path and a narrow boating match),
+      restaurants, cinemas, shops, attractions, nightlife, and a
+      multi-category compound itinerary that doesn't mention a place to
+      stay — all unaffected; confirmed no hotel/resort/homestay data
+      leaked into any unrelated query
+
+## Bug fixes found via my own stress test of the accommodation feature (2026-09-03)
+- [x] User asked me to run 5 test searches (hotel-by-area, resorts,
+      homestay/guesthouse, a "spend time in nature and spend the night"
+      vibe question, and a deliberately casual/indirect question) and
+      report honestly, without changing anything yet. Found two real bugs
+- [x] **Cross-category leakage**: "hotels near Zoo Road" also returned
+      homestay cards, even though the visitor asked specifically for
+      hotels — because a bare shared area name (Zoo Road exists in both
+      the hotel and homestay area-keyword tables) was enough on its own
+      to trigger a category's candidate list, regardless of which type
+      was actually asked for. Confirmed this wasn't just a Gemini
+      judgment call: the homestay candidate list really was non-empty
+      for that query at the data layer, and Gemini used it. The same
+      root cause was present in the reverse direction too ("airbnb near
+      Kamakhya" also had real hotel candidates available, just not
+      surfaced that particular time) — an inconsistency this project has
+      repeatedly found unreliable to depend on, so this was fixed
+      deterministically in the data layer rather than in prompt wording
+- [x] **Fixed** by adding a per-category "specific signal" check
+      (`hasHotelSignal`/`hasResortSignal`/`hasHomestaySignal` — name,
+      trigger word, stay-type, or experience-tag match; deliberately
+      excludes a bare shared area match) — a category now defers to a
+      sibling's candidate list only when it has no specific signal of its
+      own AND a sibling does. A genuinely generic "places to stay near
+      Zoo Road" (no category word at all) still correctly matches all
+      relevant categories, since neither has a specific signal to defer to
+- [x] **Casual phrasing triggered the off-topic decline**: "Something
+      budget-friendly and central, just a room to crash in near the
+      railway station" — a completely reasonable way to ask for a hotel —
+      got the full off-topic decline, 3/3 times, even with prior
+      conversation turns that had already established Guwahati as the
+      topic. Root cause: none of the three categories' keyword tables
+      recognized "room to crash" or "railway station," so all three
+      candidate lists came back genuinely empty, and the "empty list ≠
+      off-topic, stay helpful" guardrail didn't win against the general
+      on-topic instruction — the same failure class as this morning's
+      vague-park-in-a-compound-itinerary bug, just for accommodations
+- [x] **Fixed** two ways: added "railway station"/"train station" to the
+      hotel and homestay area-keyword tables (real proximity — Hotel
+      Nandan/Hotel Atithi and Guava Sauce Homestay are genuinely near
+      Paltan Bazaar/the station); and added a shared
+      `GENERAL_STAY_TRIGGER` (place to stay, spend the night, overnight,
+      room to crash, somewhere to sleep) that gives all three categories
+      a real, non-empty candidate list for casual phrasing, so Gemini has
+      actual data to work with instead of an empty prompt section
+- [x] Found and fixed a second-order bug while fixing the first one: since
+      `GENERAL_STAY_TRIGGER` alone was originally enough to satisfy each
+      category's "own signal" check, a query like "spend time in nature
+      and spend a night" — which should ONLY match resorts, via the
+      specific "nature" experience-tag — started also firing hotels' and
+      homestays' generic vague-fallback lists, since "spend a night"
+      satisfied their own signal too. Fixed by making the sibling-
+      deference check compare against each category's SPECIFIC signal
+      only (never `GENERAL_STAY_TRIGGER`), so a category with real
+      specific signal (nature -> resorts) still correctly suppresses
+      siblings that only matched the generic phrase
+- [x] Verified directly at the data layer and live against a fresh
+      server: "hotels near Zoo Road" no longer includes homestays; "any
+      good airbnb near Kamakhya?" no longer includes hotels; a genuinely
+      generic "places to stay near Zoo Road" (no type word) still
+      correctly matches both; the original railway-station phrasing no
+      longer declines and correctly surfaces 4 real Paltan Bazaar hotels;
+      "spend time in nature and spend a night" now ONLY returns the 12
+      real nature-tagged resorts, hotels/homestays correctly empty; a
+      fully generic "I need somewhere to stay tonight" (no area, no type)
+      correctly triggers all three categories' vague fallbacks together,
+      which is the right behavior for a genuinely unspecified request
+- [x] Full regression pass: the earlier itinerary-duration false-positive
+      fix, the locality-rank-1/cluster-rank-1/top-5 vague fallbacks, the
+      hotel dedup checks, and temples/parks/restaurants/cinemas/shops/
+      attractions/nightlife/off-topic-decline — all still correct.
+      Noticed (not a new bug): 2 separate live calls during this
+      verification came back with an empty reply on the first attempt and
+      a correct one on retry — same pre-existing `gemini-3.5-flash-lite`
+      response randomness already documented earlier in this file, not
+      something introduced or fixable by this change
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

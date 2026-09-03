@@ -129,10 +129,35 @@ function formatAttractionList(attractions) {
     .join('\n\n');
 }
 
+// Turns a list of matched hotels/resorts (from accommodations.js) into a
+// text block for the prompt. Shared by both, since they have the same
+// shape (name, area/location, stars, rating, highlight). Stars/rating
+// show as "not verified" rather than being omitted, so Gemini doesn't
+// need to guess whether a missing value means "free" or "unknown."
+function formatStayList(stays, locationField = 'area') {
+  if (stays.length === 0) return '(none relevant to this question)';
+  return stays
+    .map((s) => {
+      const stars = s.stars != null ? `${s.stars}-Star` : 'star rating not verified';
+      const rating = s.rating != null ? `${s.rating}/5` : 'rating not verified';
+      return `- ${s.name} (${s[locationField]}) [${stars}, ${rating}]\n  Highlight: ${s.highlight}`;
+    })
+    .join('\n\n');
+}
+
+// Homestays/Airbnb always have a real rating and review count in this
+// source data (no nulls to handle), unlike hotels/resorts.
+function formatHomestayList(homestays) {
+  if (homestays.length === 0) return '(none relevant to this question)';
+  return homestays
+    .map((h) => `- ${h.name} (${h.area}) [${h.rating}/5, ${h.reviewCount} reviews]\n  Highlight: ${h.highlight}`)
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -464,6 +489,47 @@ stay helpful in "reply" rather than declining, the same as the other
 categories above:
 
 ${formatAttractionList(relevantAttractions)}
+
+If a visitor asks about hotels, or where to stay, in Guwahati itself —
+here are the ONLY hotels you may put in "hotelRecommendations": copy each
+one's name, area, stars, and rating into the matching fields exactly as
+written, and use its highlight line as-is or lightly paraphrased. Stars
+and rating may legitimately be "not verified" for some hotels — say so
+honestly rather than inventing a number. Never state or imply a room is
+currently available, or quote a current price — this app has no live
+booking or pricing data; if asked directly, say so honestly. If THIS
+HOTEL list below is empty, leave "hotelRecommendations" empty — it could
+mean the question wasn't about hotels, or was too specific for a verified
+match; either way, stay helpful in "reply" rather than declining, the
+same as every other category above:
+
+${formatStayList(relevantHotels)}
+
+If a visitor asks about resorts, a weekend getaway, or a day trip that
+involves staying overnight outside Guwahati — here are the ONLY resorts
+you may put in "resortRecommendations", following the same copy-exactly
+and no-live-pricing rules as hotels above. These are all genuinely
+outside Guwahati proper (Sonapur, Pobitora/Mayong, Chandrapur, Amsing/
+Jorabat) — present them as a getaway or excursion from the city, not as
+an in-city stay option, and don't confuse them with the hotel list above.
+If THIS RESORT list below is empty, leave "resortRecommendations" empty,
+same reasoning as above:
+
+${formatStayList(relevantResorts, 'location')}
+
+If a visitor asks about homestays, guesthouses, or Airbnb-style stays —
+here are the ONLY ones you may put in "homestayRecommendations", copying
+name, area, rating, and review count exactly, plus its highlight line as
+written or lightly paraphrased, with the same no-live-booking/pricing
+rule as hotels and resorts above. If THIS HOMESTAY/AIRBNB list below is
+empty, leave "homestayRecommendations" empty, same reasoning as above:
+
+${formatHomestayList(relevantHomestays)}
+
+None of hotelRecommendations, resortRecommendations, or
+homestayRecommendations use "day" or "order" — unlike every other
+recommendation category, a place to stay isn't a sequenced daily
+activity, so never try to tag one with a day or position in a plan.
 
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"

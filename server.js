@@ -14,6 +14,7 @@ const { getRelevantTemples } = require('./temples');
 const { getRelevantCinemas } = require('./cinemas');
 const { getRelevantShops } = require('./shops');
 const { getRelevantAttractions } = require('./attractions');
+const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require('./accommodations');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -180,8 +181,56 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'themes', 'distanceFromDispur', 'highlight', 'day', 'order'],
       },
     },
+    hotelRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'In-city hotels being recommended in this reply. Empty if this reply is not recommending hotels. Never fill in live room availability or current pricing — this app has no live data for those. No "day"/"order" fields exist here — a place to stay is not part of the day-by-day itinerary sequencing.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          stars: { type: Type.NUMBER, nullable: true },
+          rating: { type: Type.NUMBER, nullable: true },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'highlight'],
+      },
+    },
+    resortRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Out-of-town resorts (Sonapur, Pobitora/Mayong, Chandrapur, Amsing/Jorabat — all outside Guwahati proper) being recommended in this reply, for a day-trip or weekend-getaway question. Empty if this reply is not recommending resorts. Never fill in live room availability or current pricing.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          stars: { type: Type.NUMBER, nullable: true },
+          rating: { type: Type.NUMBER, nullable: true },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'highlight'],
+      },
+    },
+    homestayRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Homestays, guesthouses, and Airbnb-style stays being recommended in this reply. Empty if this reply is not recommending one of these. Never fill in live availability or current pricing.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          rating: { type: Type.NUMBER },
+          reviewCount: { type: Type.NUMBER },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'rating', 'reviewCount', 'highlight'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations'],
 };
 
 const app = express();
@@ -268,6 +317,9 @@ app.post('/api/chat', async (req, res) => {
     const relevantCinemas = getRelevantCinemas(allVisitorText);
     const relevantShops = getRelevantShops(allVisitorText);
     const relevantAttractions = getRelevantAttractions(allVisitorText);
+    const relevantHotels = getRelevantHotels(allVisitorText);
+    const relevantResorts = getRelevantResorts(allVisitorText);
+    const relevantHomestays = getRelevantHomestays(allVisitorText);
     // Temples' own area names (hill/locality) are folded into the text
     // restaurants.js sees, purely so its existing area-keyword matching can
     // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
@@ -286,7 +338,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays),
         // Raised from 2048: a broad "market" question now returns all 16
         // real market entries with full text fields, which needs ~2,400
         // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON
@@ -321,7 +373,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [] };
     }
 
     res.json({
@@ -333,6 +385,9 @@ app.post('/api/chat', async (req, res) => {
       cinemaRecommendations: parsed.cinemaRecommendations,
       shopRecommendations: parsed.shopRecommendations,
       attractionRecommendations: parsed.attractionRecommendations,
+      hotelRecommendations: parsed.hotelRecommendations,
+      resortRecommendations: parsed.resortRecommendations,
+      homestayRecommendations: parsed.homestayRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

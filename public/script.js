@@ -130,6 +130,30 @@ function addRecommendationCards(recommendations) {
       distance.className = 'rec-cost';
       distance.textContent = `${rec.distanceFromDispur} from Dispur`;
       meta.appendChild(distance);
+    } else if ('reviewCount' in rec) {
+      // Homestays/Airbnb: no stars, just a rating + how many reviews it's based on.
+      const rating = document.createElement('span');
+      rating.className = 'rec-rating';
+      rating.textContent = `★ ${rec.rating}`;
+      meta.appendChild(rating);
+
+      const reviews = document.createElement('span');
+      reviews.className = 'rec-cost';
+      reviews.textContent = `${rec.reviewCount} reviews`;
+      meta.appendChild(reviews);
+    } else if ('stars' in rec) {
+      // Hotels/resorts: stars and rating may each legitimately be null
+      // ("not verified" in the source data) — show that honestly instead
+      // of a blank or a made-up number.
+      const stars = document.createElement('span');
+      stars.className = 'rec-rating';
+      stars.textContent = rec.stars != null ? `${rec.stars}-Star` : 'star rating not verified';
+      meta.appendChild(stars);
+
+      const rating = document.createElement('span');
+      rating.className = 'rec-cost';
+      rating.textContent = rec.rating != null ? `★ ${rec.rating}` : 'rating not verified';
+      meta.appendChild(rating);
     } else if ('entryFee' in rec) {
       const entryFee = document.createElement('span');
       entryFee.className = 'rec-cost';
@@ -215,6 +239,9 @@ function renderRecommendations(data) {
     data.cinemaRecommendations,
     data.shopRecommendations,
     data.attractionRecommendations,
+    data.hotelRecommendations,
+    data.resortRecommendations,
+    data.homestayRecommendations,
   ];
   const all = categories.flat();
   const hasSequence = all.some((rec) => rec.order != null);
