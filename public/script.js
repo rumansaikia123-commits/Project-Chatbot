@@ -125,6 +125,11 @@ function addRecommendationCards(recommendations) {
         dressCode.textContent = rec.dressCode;
         meta.appendChild(dressCode);
       }
+    } else if ('distanceFromDispur' in rec) {
+      const distance = document.createElement('span');
+      distance.className = 'rec-cost';
+      distance.textContent = `${rec.distanceFromDispur} from Dispur`;
+      meta.appendChild(distance);
     } else if ('entryFee' in rec) {
       const entryFee = document.createElement('span');
       entryFee.className = 'rec-cost';
@@ -209,6 +214,7 @@ function renderRecommendations(data) {
     data.parkRecommendations,
     data.cinemaRecommendations,
     data.shopRecommendations,
+    data.attractionRecommendations,
   ];
   const all = categories.flat();
   const hasSequence = all.some((rec) => rec.order != null);

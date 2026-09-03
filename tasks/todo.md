@@ -1102,6 +1102,125 @@ nightlife venues stay as plain text for now.
       restaurant near Six Mile") unaffected; confirmed live against a
       fresh server with "where should I go for dinner tonight?"
 
+## Added an eighth category: attractions/sightseeing (2026-09-03)
+- [x] User shared a 35-place Guwahati sightseeing document (tiers
+      independently verified by the user, so no source-column doubt this
+      time). Reviewed it and found real overlap: 5 temples (Kamakhya,
+      Umananda, Basistha, Madan Kamdev, Bhubaneshwari) and 1 park
+      (Dighalipukhuri) already exist in `temples.js`/`parks.js`, described
+      here from a general-sightseeing angle instead of a worship angle
+- [x] User's explicit design: these overlapping places should appear in
+      BOTH a "temple"/"park" answer AND a general "what to see"/"things
+      to do" answer — but a bare name ("Kamakhya") must always resolve to
+      the temple/park file, never the sightseeing file. Discussed the
+      sync mechanism (manual vs. programmatic) and the user delegated the
+      choice with one instruction: pick whichever avoids bugs/AI
+      confusion
+- [x] Chose programmatic reuse over manual sync: `attractions.js` pulls
+      `name`/`area` directly from `temples.js`/`parks.js` at load time via
+      `fromTemple()`/`fromPark()`, rather than a second hand-typed copy —
+      structurally impossible for the two to drift apart, unlike the
+      manual-sync pattern already used for Terra Mayaa/Maroon Room/Abacus
+      (which has already needed a real fix once, for Chakkranosh)
+- [x] Built `attractions.js` (35 entries) mirroring `temples.js`'s shape:
+      name/area (6 pulled from temples.js/parks.js, 29 own), tier+rank
+      (internal only, drives the vague "what to see" fallback sorted by
+      rank), themes (the source's own clean "Falls Under" tag vocabulary
+      — no messy free-text to normalize this time, unlike cinemas/shops),
+      distanceFromDispur (kept as the source's descriptive string, e.g.
+      "~45-50 km", not forced into a bare number), highlight. Per
+      instruction, "Resort"/"Resorts" dropped from two entries' themes —
+      that becomes its own future hotels/resorts category, not folded in
+      here
+- [x] Enforced the name-priority rule at the code level, not just in the
+      prompt: `CROSS_REFERENCED_NAMES` guarantees the 6 overlapping places
+      are never name-matchable within `attractions.js` itself (only via a
+      theme match or the Tier-1 fallback) — a bare "Kamakhya"/
+      "Dighalipukhuri" can only ever be answered by `temples.js`/
+      `parks.js`. Extended the same discipline one level further, by my
+      own judgment call (flagged for visibility): `THEME_KEYWORDS`
+      deliberately has no trigger for the generic words "temple" or
+      "park" either, since those categories already fully own generic
+      questions about themselves too, not just named ones
+- [x] Also tightened `systemPrompt.js`'s parks guardrail — it previously
+      told Gemini it could mention "landmarks or viewpoints" from its own
+      general knowledge for broad sightseeing questions; now that a real
+      verified attractions list exists, that carve-out was narrowed to
+      point at the attractions list instead, closing the same kind of gap
+      "temples" was already dropped from that sentence for earlier
+- [x] Bug found and fixed during first live test, same class as the
+      cinema bug: `formatAttractionList()` rendered distance and highlight
+      on one unlabeled line, so Gemini copied the whole rendered phrase
+      ("~8 km from Dispur") into the `distanceFromDispur` field instead of
+      just the distance. Fixed by giving each field its own labeled line
+      and tightening the guardrail wording; reverified 3/3 clean
+      afterward ("~8 km", not "~8 km from Dispur")
+- [x] Second bug found and fixed during verification, unrelated to this
+      session's own changes: `parks.js` (built earliest of all eight
+      category files, before the name-lookup pattern existed) had NO
+      way to match a park by its own name at all — only by activity/area/
+      generic "park" word. A bare "tell me about Dighalipukhuri" matched
+      nothing anywhere. Added a `NAME_KEYWORDS` table + top-priority name
+      match to `getRelevantParks()`, mirroring every other category file,
+      without disturbing the deliberate "vague park question asks a
+      clarifying question" behavior for genuinely unnamed questions
+- [x] Also broadened `attractions.js`'s own sightseeing trigger during
+      verification — "what should I see" didn't match the original
+      narrower "what to see" pattern; broadened to cover "what
+      should/can/to see/visit/explore" naturally
+- [x] Verified live: bare "Kamakhya"/"Dighalipukhuri" resolve only to
+      temples.js/parks.js (0 attraction results either way); "what should
+      I see in Guwahati" returns the 9 real Tier-1 places sorted by rank,
+      including Kamakhya and Umananda; a wildlife-sanctuary theme query
+      correctly includes both dedicated attractions and cross-referenced
+      ones; a genuinely full itinerary ("temple in the morning, some
+      sightseeing, lunch, a movie in the evening, drinks at night") came
+      back with all five categories correctly populated and sequenced
+      (order 1-5) in one response — the exact multi-category, single-day
+      planning experience the user asked to confirm was actually workable
+- [x] Full regression pass: temples, parks (both narrow and vague),
+      restaurants, nightlife, cinemas, shops all unaffected
+
+## Bug fix: vague part of a compound itinerary wrongly declined the whole request (2026-09-03)
+- [x] User asked me to self-test 5 random full-day plans mixing all 8
+      category files, before touching any code, and report results first.
+      4/5 were correct; 1 was a real, 100% reproducible bug: "Plan a day: a
+      park in the morning, a cinema in the afternoon, shopping in the
+      evening, dinner, then nightlife" got the full off-topic decline reply
+      ("I'm focused on being your Guwahati guide...") even though every
+      part of the request was genuinely about Guwahati
+- [x] Isolated the trigger directly: moving the vague park mention to a
+      different position in the same request, removing it entirely, or
+      asking about it alone all changed the outcome — the bug specifically
+      needed "a vague, unnamed park mention as part of a multi-part
+      request." Root cause: the parks guardrail's existing "ask a
+      clarifying question, don't list any parks" instruction and the
+      separate "stay on topic, decline off-topic questions" instruction
+      had no explicit relationship — Gemini appears to have folded the
+      vague-park clarifying case into "this needs a decline" rather than
+      "this needs a follow-up question, the rest of the message still
+      gets answered"
+- [x] Fixed in `systemPrompt.js`: added a paragraph explicitly
+      distinguishing "vague but genuinely on-topic" from "actually
+      off-topic" for compound/itinerary requests; added a follow-up
+      sentence to the existing park guardrail clarifying that its
+      clarifying-question behavior is not a decline, and every other part
+      of a multi-part request must still be fully answered
+- [x] Verified with the exact originally-failing message, 3 clean
+      successful attempts (a 4th attempt hit an unrelated transient 500
+      from the Gemini API itself, not this bug): no decline; cinema, shop,
+      restaurant, and nightlife recommendations all correctly populated;
+      reply correctly asks a clarifying question about the park part only
+      ("what kind of park experience are you looking for...") while fully
+      answering the rest
+- [x] Full regression pass against a fresh server: named temple
+      (Kamakhya), vague park (still correctly asks a clarifying question,
+      not broken by this fix), restaurant, named cinema, shop-by-area,
+      named attraction (Umananda Island correctly resolves to
+      `templeRecommendations`, not attractions — expected, it's one of
+      the 6 cross-referenced places), nightlife, and a genuinely off-topic
+      question (still correctly declined) — all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

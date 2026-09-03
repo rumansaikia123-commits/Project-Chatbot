@@ -105,6 +105,32 @@ const ACTIVITY_KEYWORDS = [
   { pattern: /\bmuseum\b|art\s?gallery/, activity: 'museum' },
 ];
 
+// Name keyword lookup — lets a visitor ask about one specific park by
+// name and get just that one, always, regardless of how vague the rest
+// of the message is (a specific name is never "too vague to narrow
+// down" — see getRelevantParks below). Added after live testing found a
+// bare park name like "Dighalipukhuri" matched nothing at all: this file
+// predates the name-lookup pattern every other category file uses.
+const NAME_KEYWORDS = [
+  { pattern: /riverfront\s?park|brahmaputra\s?riverfront/, name: 'Brahmaputra Riverfront Park' },
+  { pattern: /sati\s?radhika|shanti\s?udyan/, name: 'Sati Radhika Shanti Udyan (Uzanbazar Riverfront)' },
+  { pattern: /botanical\s?garden/, name: 'Botanical Garden Guwahati' },
+  { pattern: /nehru\s?park/, name: 'Nehru Park' },
+  { pattern: /shraddhanjali\s?kanan/, name: 'Shraddhanjali Kanan' },
+  { pattern: /amrit\s?udyan/, name: 'Amrit Udyan' },
+  { pattern: /atal\s?udyan/, name: 'Atal Udyan' },
+  { pattern: /jor\s?pukhuri/, name: 'Jor Pukhuri Park' },
+  { pattern: /dighalipukhuri/, name: 'Dighalipukhuri Park' },
+  { pattern: /gandhi\s?mandap/, name: 'Gandhi Mandap Park' },
+  { pattern: /mahabahu|river\s?heritage\s?centre/, name: 'Mahabahu Brahmaputra River Heritage Centre' },
+  { pattern: /sankardev\s?udyan/, name: 'Sankardev Udyan' },
+  { pattern: /tarun\s?ram\s?phukan|deshbhakta/, name: 'Deshbhakta Tarun Ram Phukan Park' },
+  { pattern: /saraighat\s?war\s?memorial/, name: 'Saraighat War Memorial Park' },
+  { pattern: /swahid\s?udyan/, name: 'Swahid Udyan' },
+  { pattern: /silpukhuri\s?park/, name: 'Silpukhuri Park' },
+  { pattern: /doulagup/, name: 'Doulagup Park' },
+];
+
 // Area keyword lookup — one row per distinct Location value used above.
 const AREA_KEYWORDS = [
   { pattern: /pan\s?bazar/, area: 'Pan Bazar' },
@@ -128,6 +154,14 @@ const OPEN_DAILY_TRIGGER = /open\s*(every\s*day|daily|all\s*(week|days))|no\s*(o
 
 const PARK_TRIGGER = /\bparks?\b|\bgardens?\b|\budyan\b|\bkanan\b|\briverfront\b|\bpromenade\b/;
 
+function matchNames(text) {
+  const matched = [];
+  for (const { pattern, name } of NAME_KEYWORDS) {
+    if (pattern.test(text)) matched.push(name);
+  }
+  return matched;
+}
+
 function matchActivities(text) {
   const matched = new Set();
   for (const { pattern, activity } of ACTIVITY_KEYWORDS) {
@@ -145,12 +179,19 @@ function matchAreas(text) {
 }
 
 // Looks at what the visitor actually asked and returns only the matching
-// parks. Returns [] both when the message isn't park-related at all, and
-// when it's a park question too generic to narrow down (there's no
-// "top-rated" fallback here the way restaurants has, since parks have no
-// rating field) — systemPrompt.js asks a clarifying question in that case.
+// parks. A specific park name always wins outright, no matter how vague
+// the rest of the message is. Otherwise, returns [] both when the
+// message isn't park-related at all, and when it's a park question too
+// generic to narrow down (there's no "top-rated" fallback here the way
+// restaurants has, since parks have no rating field) — systemPrompt.js
+// asks a clarifying question in that case.
 function getRelevantParks(message) {
   const text = message.toLowerCase();
+
+  const matchedNames = matchNames(text);
+  if (matchedNames.length > 0) {
+    return parks.filter((p) => matchedNames.includes(p.name));
+  }
 
   const matchedActivities = matchActivities(text);
   const matchedAreas = matchAreas(text);
