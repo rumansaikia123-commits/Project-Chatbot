@@ -277,7 +277,7 @@ const THEME_KEYWORDS = [
   { pattern: /\bmuseum\b|\bheritage\b/, theme: 'museum-heritage' },
   { pattern: /\bcultural\b|\bculture\b/, theme: 'cultural-centre' },
   { pattern: /viewpoint|view\s?point/, theme: 'viewpoint' },
-  { pattern: /\bcruises?\b|\bboat(ing)?\b|riverfront/, theme: 'river-experience' },
+  { pattern: /\bcruises?\b|\bboat(ing)?\b|riverfront|\briver\b/, theme: 'river-experience' },
   { pattern: /\bscenic\b|\bnature\b|natural/, theme: 'scenic-nature' },
   { pattern: /\bzoo\b|botanical\s?garden/, theme: 'zoo-botanical-garden' },
   { pattern: /wildlife|sanctuary|safari|\brhino/, theme: 'wildlife-sanctuary' },
@@ -318,9 +318,16 @@ const AREA_KEYWORDS = [
 // phrase "what to see." Found missing during testing: "what should I do
 // in Guwahati" (an extremely natural phrasing) originally matched
 // nothing at all, since "do" was only allowed after "things to ___", not
-// after "what should/can/to (i) ___" — added it there too.
+// after "what should/can/to (i) ___" — added it there too. Also found
+// missing: "river exploration" — the bare verb pattern \bexplore\b never
+// matches its own noun form "exploration," so a real, natural question
+// like "details of river exploration in Guwahati" matched nothing at all
+// (confirmed live: the reply fell back to a vague, generic answer
+// instead of naming any of the real cruise operators or ferry points).
+// Broadened to \bexplor(e|ing|ation)\b to also catch "exploring" and
+// "exploration," not just the bare verb.
 const SIGHTSEEING_TRIGGER =
-  /\bsightseeing\b|things?\s?to\s?(do|see)|places?\s?to\s?(see|visit|explore)|what\s?(should|can|to)\s?(i\s?)?(do|see|visit|explore)|\battractions?\b|\bexcursions?\b|day\s?trips?|\bexplore\b/;
+  /\bsightseeing\b|things?\s?to\s?(do|see)|places?\s?to\s?(see|visit|explor(e|ing))|what\s?(should|can|to)\s?(i\s?)?(do|see|visit|explor(e|ing))|\battractions?\b|\bexcursions?\b|day\s?trips?|\bexplor(e|ing|ation)\b/;
 
 const TOP_N = 10;
 

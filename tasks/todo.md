@@ -1723,6 +1723,27 @@ nightlife venues stay as plain text for now.
       assertive didn't make parks less willing to ask its own clarifying
       question), and cruises/temples/off-topic decline all still correct
 
+## Bug fix: "river exploration" matched no real data at all (2026-09-03)
+- [x] User asked me to test "give me details of river exploration in
+      Guwahati?" live. Got a vague, generic reply with no real operator
+      named — confirmed at the data layer this was a genuine matching
+      gap, not a Gemini judgment call
+- [x] Root cause, two separate gaps in `attractions.js`: the sightseeing
+      trigger's `\bexplore\b` only matches the bare verb, never its own
+      noun form "exploration"; and the river-experience theme keyword had
+      no trigger for the plain word "river" itself, only "cruise"/
+      "boat"/"riverfront" — so a fully natural, real question matched
+      neither the general sightseeing trigger nor the specific river
+      theme
+- [x] Fixed both: broadened to `\bexplor(e|ing|ation)\b`, and added
+      `\briver\b` to the river-experience theme pattern
+- [x] Verified live: the exact reported question now returns all 7 real
+      river-related cards (the 4 cruise operators plus Umananda, the
+      Ropeway, and the River Heritage Centre) with a warm orienting reply
+      instead of a vague non-answer. Regression pass confirmed "what
+      should I do/see," named temple lookups, the park clarifying-
+      question behavior, and the off-topic decline are all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
