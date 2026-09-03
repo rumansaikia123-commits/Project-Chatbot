@@ -1542,6 +1542,98 @@ nightlife venues stay as plain text for now.
       facilities, gaming venues, and a genuinely off-topic question — all
       unaffected
 
+## Added transport as three new categories (2026-09-03)
+- [x] User wanted a `transport.js` covering ASTC bus terminals, railway
+      stations, airport, "and some other" — discussed before building.
+      User asked "is there a water terminal?" — researched and found
+      Gateway of Guwahati Terminal and Jetty (Pan Bazaar), a real,
+      purpose-built modern river terminal, distinct from the two
+      traditional ferry ghats (Kachari Ghat, Sukreswar Ghat) also
+      researched
+- [x] User then substantially expanded scope: also cover "how do I get to
+      Guwahati" / "how do I travel from Guwahati to X" questions from the
+      hub data itself; mention within-city options (govt buses, autos,
+      Uber/Ola/Rapido) whenever asked about getting around inside the
+      city; and — the biggest new piece — research and add ~10 real,
+      rated private cab-hire businesses and ~5 real, rated self-drive
+      rental businesses, each with a real phone number, "rechecked at
+      least twice." Confirmed two design choices before building: (1)
+      cab/self-drive entries include area, phone, Google rating (where
+      findable), and specialty — richer than the "not much info needed"
+      style used for the hub data; (2) the within-city info is a plain
+      instruction in the system prompt, not a data lookup, since there's
+      no specific venue/route to verify or list
+- [x] Researched via WebSearch, cross-checked against at least two
+      independent sources each: 8 transport hubs, 8 cab-hire businesses,
+      5 self-drive businesses — all with real addresses/areas, and every
+      cab/self-drive entry with a real phone number and (where findable)
+      a real rating + review count
+- [x] Two real candidates deliberately excluded after research, not
+      silently dropped: "Gear Up Now" self-drive (a same-area listing
+      under a similar name was flagged "Closed Down," so current
+      operating status couldn't be confirmed) and "Mini Taxi Tours &
+      Travels" cab-hire (a real, well-rated business, but no phone number
+      could be confirmed after two separate searches) — reported to the
+      user rather than including either on a guess
+- [x] One honesty note carried into the app itself: unlike every other
+      category (which consistently cites Google), these ratings came from
+      a mix of Google and aggregator sites (Justdial, SafarCabby)
+      depending on what each business's own listings actually showed —
+      noted explicitly rather than presenting a single, implied source
+- [x] Built `transport.js` (one file, three groups, same reasoning as
+      accommodations.js). None of the three carry day/order fields —
+      arriving/departing or booking a cab isn't a sequenced daily
+      activity, same reasoning already applied to accommodations
+- [x] Bug found and fixed during my own pre-live testing: "where does the
+      river cruise start from" matched only the two ferry ghats, missing
+      the actual cruise terminal (Gateway of Guwahati) — the type-keyword
+      table had "river cruise" folded into the Ferry Ghat pattern instead
+      of its own Water Terminal signal. Split "cruise"/"jetty" into their
+      own Water Terminal match; reverified both "river cruise" and "ferry
+      to Umananda" resolve to the correct, different hubs
+- [x] `server.js`/`systemPrompt.js`/`public/script.js`: wired the 3 new
+      categories, no day/order (the first categories since accommodations
+      to be excluded). Reused the existing `'reviewCount' in rec` branch
+      for cab/self-drive cards (same rating+reviewCount shape as
+      homestays) rather than duplicating it; added one new `'type' in
+      rec` branch for transport hubs, and one generic phone-number line
+      appended to any card whose data includes a `phone` field
+- [x] Verified live against a fresh server: "how do I get to Guwahati
+      from Delhi" correctly surfaces the airport + railway station;
+      "where does the river cruise start from" now correctly resolves
+      to only the cruise terminal (not the ferry ghats); "how do I get
+      around within Guwahati" correctly returns no data and a plain
+      buses/autos/apps answer; outstation cab and self-drive questions
+      each correctly return only their own 8/5 real businesses with no
+      cross-leakage; a live pricing question is correctly declined
+      honestly while still handing over the real business's contact info
+- [x] Full regression pass: temples, parks, restaurants, nightlife, hotel
+      dedup, spectator venues, the football/hockey partial-decline fix
+      from earlier today, and a genuinely off-topic question — all
+      unaffected
+
+## Wording fix: off-topic decline phrase reused for "no live data" honesty (2026-09-03)
+- [x] Noticed while verifying the new cab-hire feature: asking "how much
+      will Rocket Cab charge me right now?" got a real, correct answer
+      (real contact info, honestly no live pricing) — but worded as "I'm
+      focused on being your Guwahati guide, so I can't help with live
+      pricing..." — reusing the exact phrase this project reserves for a
+      genuine off-topic decline, for what's actually a fully on-topic
+      question the bot just doesn't have live data for. Functionally
+      correct, but confusingly worded
+- [x] Fixed in `systemPrompt.js`: the general "say so honestly rather
+      than guessing" instruction now gives its own distinct example
+      phrasing ("I don't have live pricing for that, but here's what I
+      can tell you...") and explicitly says never to reach for the
+      off-topic phrasing for this case; added a matching note right next
+      to the off-topic example itself, reserving it strictly for
+      questions with nothing to do with Guwahati
+- [x] Verified: the exact reported case now correctly says "I don't have
+      live pricing..." 3/3 times, never reusing the off-topic phrase;
+      confirmed genuine off-topic questions still decline correctly, and
+      temple-timing honesty / temple lookups / the football-hockey
+      partial-answer fix from earlier today are all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

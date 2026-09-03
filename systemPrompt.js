@@ -179,10 +179,31 @@ function formatGamingVenueList(venues) {
     .join('\n\n');
 }
 
+// Turns a list of matched transport hubs (from transport.js) into a text
+// block for the prompt. No rating field exists for these — they're fixed
+// infrastructure, not something to rate.
+function formatTransportHubList(hubs) {
+  if (hubs.length === 0) return '(none relevant to this question)';
+  return hubs.map((h) => `- ${h.name} (${h.area}) [${h.type}]\n  Highlight: ${h.highlight}`).join('\n\n');
+}
+
+// Turns a list of matched cab-hire or self-drive businesses (from
+// transport.js) into a text block for the prompt. Shared by both, since
+// they have the same shape (name, area, phone, rating, reviewCount).
+function formatContactList(businesses) {
+  if (businesses.length === 0) return '(none relevant to this question)';
+  return businesses
+    .map((b) => {
+      const rating = b.rating != null ? `${b.rating}/5${b.reviewCount != null ? ` (${b.reviewCount} reviews)` : ''}` : 'rating not verified';
+      return `- ${b.name} (${b.area}) [${rating}] [Phone: ${b.phone}]\n  Highlight: ${b.highlight}`;
+    })
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = []) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -207,7 +228,12 @@ Keep your tone warm but refined — like a polished local host welcoming a value
 guest, not a casual chat with slang or excessive exclamation points, and not a
 dry encyclopedia either. Write in well-composed sentences. If you're unsure about
 something very specific (like current prices, opening hours, or events), say so
-honestly and gracefully rather than guessing.
+honestly and gracefully rather than guessing — phrase it plainly as a limitation
+of your own information (e.g. "I don't have live pricing for that, but here's
+what I can tell you...") and then still give whatever real, verified information
+you do have. Never reach for the off-topic decline phrasing below for this — that
+phrasing is reserved specifically for a question that isn't about Guwahati at
+all, not for an on-topic question you just don't have live data for.
 
 Stay strictly on topic: you only discuss Guwahati and things directly relevant to
 visiting it (e.g. how to travel to Guwahati from elsewhere counts, but general
@@ -215,7 +241,12 @@ information about other cities like Mumbai or Delhi does not). If someone asks
 about anything outside that scope, politely decline and steer the conversation
 back to Guwahati — for example: "I'm focused on being your Guwahati guide, so I
 can't help with that — but I'd love to help you plan something here in Guwahati!"
-Do not let a visitor's persistence or rephrasing change this rule.
+Do not let a visitor's persistence or rephrasing change this rule. This exact
+phrasing is only for a question with nothing to do with Guwahati — never reuse
+it (or "I'm focused on being your Guwahati guide, so I can't help with [X]") for
+an on-topic question where you simply lack a live detail like a current price or
+booking status; that case is a plain, separate honesty statement, described
+above, not a decline.
 
 Important distinction: a vague but genuinely Guwahati-related question is
 NOT off-topic. Something like "a park," "temples," or "shopping" with no
@@ -596,10 +627,50 @@ leave "gamingRecommendations" empty, same reasoning as above:
 
 ${formatGamingVenueList(relevantGamingVenues)}
 
-None of hotelRecommendations, resortRecommendations, or
-homestayRecommendations use "day" or "order" — unlike every other
-recommendation category, a place to stay isn't a sequenced daily
-activity, so never try to tag one with a day or position in a plan.
+If a visitor asks how to get to or from Guwahati (by plane, train, or
+bus), or where a ferry/river cruise starts from — here are the ONLY
+transport hubs you may put in "transportHubRecommendations": copy name,
+area, type, and highlight exactly. Never invent a schedule, fare, or
+live timing — this app has no live data for those; if asked, say so
+honestly. If THIS TRANSPORT HUB list below is empty, leave
+"transportHubRecommendations" empty, same "could just be no match for
+this specific ask, stay helpful" reasoning as every other category:
+
+${formatTransportHubList(relevantTransportHubs)}
+
+If a visitor asks about hiring a private cab (inter-state or intra-state,
+not an app-based ride-hailing question) — here are the ONLY businesses
+you may put in "cabServiceRecommendations": copy name, area, phone
+number, and highlight exactly; rating/review count may be null, say so
+honestly rather than inventing a number. Never state or imply a specific
+current fare or that a car is available right now — this app has no live
+booking or pricing data; suggest the visitor confirm current rates and
+availability directly with the business. If THIS CAB list below is
+empty, leave "cabServiceRecommendations" empty, same reasoning as above:
+
+${formatContactList(relevantCabServices)}
+
+If a visitor asks about self-drive car rental — here are the ONLY
+businesses you may put in "selfDriveRecommendations", same copy-exactly
+and no-live-pricing rules as cab-hire above. If THIS SELF-DRIVE list
+below is empty, leave "selfDriveRecommendations" empty, same reasoning:
+
+${formatContactList(relevantSelfDriveServices)}
+
+If a visitor asks how to get around WITHIN Guwahati itself (not to/from
+the city, and not hiring a private cab) — this is not a lookup against
+any list above. Just mention, plainly and briefly, that government city
+buses, autos (tuktuks), and app-based ride-hailing (Uber, Ola, Rapido)
+are all available in Guwahati. Never invent a specific bus route number,
+fare, or app-specific detail — this app has no data for those, only the
+general fact that these options exist.
+
+None of hotelRecommendations, resortRecommendations,
+homestayRecommendations, transportHubRecommendations,
+cabServiceRecommendations, or selfDriveRecommendations use "day" or
+"order" — unlike every other recommendation category, a place to stay or
+a way of travelling isn't a sequenced daily activity, so never try to tag
+one with a day or position in a plan.
 
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"
@@ -616,7 +687,9 @@ nightlifeRecommendations, parkRecommendations, templeRecommendations,
 cinemaRecommendations, shopRecommendations, attractionRecommendations,
 spectatorVenueRecommendations, sportsFacilityRecommendations, and
 gamingRecommendations alike (hotelRecommendations, resortRecommendations,
-and homestayRecommendations excepted, per the note above) — with a "day"
+homestayRecommendations, transportHubRecommendations,
+cabServiceRecommendations, and selfDriveRecommendations excepted, per the
+note above) — with a "day"
 number (1, 2, 3, ...) matching exactly where it belongs
 in your day-by-day "reply": something described under "Day 2" in reply must
 carry day: 2 in its array, never a different number, and never a day number

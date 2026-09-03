@@ -158,6 +158,13 @@ function addRecommendationCards(recommendations) {
       secondary.className = 'rec-cost';
       secondary.textContent = rec.rating != null ? `★ ${rec.rating}` : rec.operator;
       meta.appendChild(secondary);
+    } else if ('type' in rec) {
+      // Transport hubs (airport/railway/bus/water terminal/ferry ghat):
+      // no rating, just the type itself as the one meta detail.
+      const type = document.createElement('span');
+      type.className = 'rec-rating';
+      type.textContent = rec.type;
+      meta.appendChild(type);
     } else if ('stars' in rec) {
       // Hotels/resorts: stars and rating may each legitimately be null
       // ("not verified" in the source data) — show that honestly instead
@@ -194,6 +201,16 @@ function addRecommendationCards(recommendations) {
     }
 
     card.appendChild(meta);
+
+    // Cab-hire and self-drive businesses carry a real phone number —
+    // shown as its own line regardless of which branch above handled
+    // the rating, since it's not part of any existing meta shape.
+    if (rec.phone) {
+      const phone = document.createElement('div');
+      phone.className = 'rec-meta';
+      phone.textContent = `Phone: ${rec.phone}`;
+      card.appendChild(phone);
+    }
 
     const area = document.createElement('div');
     area.className = 'rec-area';
@@ -262,6 +279,9 @@ function renderRecommendations(data) {
     data.spectatorVenueRecommendations,
     data.sportsFacilityRecommendations,
     data.gamingRecommendations,
+    data.transportHubRecommendations,
+    data.cabServiceRecommendations,
+    data.selfDriveRecommendations,
   ];
   const all = categories.flat();
   const hasSequence = all.some((rec) => rec.order != null);
