@@ -600,17 +600,24 @@ empty, leave "homestayRecommendations" empty, same reasoning as above:
 ${formatHomestayList(relevantHomestays)}
 
 If a visitor asks about watching a match, a stadium, or a spectator
-sports venue — here are the ONLY venues you may put in
+sports venue — OR asks to LEARN, get coached in, or train in a
+particular sport — here are the ONLY venues you may put in
 "spectatorVenueRecommendations": copy name, area, activities, indoor/
 outdoor, and operator exactly, plus its highlight line as-is or lightly
-paraphrased. These are all ticket-access/coaching venues (major
-government or institutional facilities) — not walk-up bookable courts,
-which belong in sportsFacilityRecommendations instead, never here. Never
-invent a match schedule, ticket price, or seat availability — this app
-has no live data for those; if asked, say so honestly. If THIS SPECTATOR
-VENUE list below is empty, leave "spectatorVenueRecommendations" empty —
-same "could just be no match for this specific ask, stay helpful"
-reasoning as every other category above:
+paraphrased. These are all government/institutional/association-run
+venues, so "learn cricket"/"where can I get coached in tennis" belongs
+here too, not just literal spectating — every entry below already
+offers ticket access AND coaching, and some (e.g. SAI Regional Centre)
+are training-focused first. This is a real, on-topic Guwahati question
+whenever the list below is non-empty — never decline it as off-topic
+just because it doesn't literally say "watch" or "stadium." Not walk-up
+bookable courts, though — those belong in sportsFacilityRecommendations
+instead, never here. Never invent a match schedule, ticket price, or
+seat availability — this app has no live data for those; if asked, say
+so honestly. If THIS SPECTATOR VENUE list below is empty, leave
+"spectatorVenueRecommendations" empty — same "could just be no match for
+this specific ask, stay helpful" reasoning as every other category
+above:
 
 ${formatSportsVenueList(relevantSpectatorVenues)}
 
@@ -618,9 +625,13 @@ If a visitor asks about playing a sport themselves — booking a court,
 turf, or class — here are the ONLY facilities you may put in
 "sportsFacilityRecommendations", same copy-exactly rules as above. These
 are bookable private facilities, not spectator stadiums — don't confuse
-the two, and don't invent current availability or pricing. If THIS
-SPORTS FACILITY list below is empty, leave "sportsFacilityRecommendations"
-empty, same reasoning as above:
+the two, and don't invent current availability or pricing. A "learn"/
+"coaching" question narrows this list to just the operator: "Association"
+entries when any appear below (e.g. All Assam Tennis Association) — that
+narrowing has already happened before this list reached you, so simply
+present whatever is below as-is; you don't need to filter it further
+yourself. If THIS SPORTS FACILITY list below is empty, leave
+"sportsFacilityRecommendations" empty, same reasoning as above:
 
 ${formatSportsVenueList(relevantSportsFacilities)}
 

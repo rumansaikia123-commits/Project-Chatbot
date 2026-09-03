@@ -1744,6 +1744,59 @@ nightlife venues stay as plain text for now.
       should I do/see," named temple lookups, the park clarifying-
       question behavior, and the off-topic decline are all unaffected
 
+## Split "learn a sport" from "where can I play" in sports.js (2026-09-03)
+- [x] User gave an explicit routing rule after reviewing earlier live
+      tests: "learn [a sport]"/coaching/training questions should answer
+      from Government/Institutional/Association-operated venues, while
+      "where can I play"/gaming questions keep using the Private/
+      Recreational and Gaming & Entertainment groups as before. Confirmed
+      with one clarifying question: even literal spectator stadiums
+      (Barsapara, Nehru Stadium) should count for "learn," since they're
+      government-operated, not just the training-flavored venues (SAI
+      Regional Centre, Chachal Tennis Complex)
+- [x] Implementation note: since `operator` already exists on both
+      spectatorVenues (100% government/institutional/association) AND
+      sportsFacilities (mostly Private, but All Assam Tennis Association
+      and Assam Archery Club are genuinely Association-run), a "learn"
+      question now correctly blends BOTH groups — e.g. "learn tennis"
+      surfaces Chachal Tennis Complex + SAI Regional Centre from
+      spectatorVenues AND All Assam Tennis Association from
+      sportsFacilities, filtered to operator-Association only there
+- [x] Added a `LEARN_TRIGGER` ("learn"/"coaching"/"training"), moved
+      "coaching" out of `FACILITY_TRIGGER` into it. Deliberately did NOT
+      fold the learn-trigger into the shared `hasSpectatorSignal` helper
+      that sibling groups check for deference — doing so would have made
+      `getRelevantSportsFacilities` wrongly defer entirely to spectator
+      on any "learn" question, instead of applying its own new
+      Association-only filter
+- [x] Bug found and fixed during my own pre-live testing: after the data-
+      layer change, "I want to learn cricket" still got the FULL off-
+      topic decline 3/3 times, even though the data layer now correctly
+      returned 3 real cricket stadiums. Root cause: the
+      spectatorVenueRecommendations guardrail in `systemPrompt.js` only
+      ever described "watching a match/stadium" as the reason to use that
+      list — with no framing covering "learn a sport," and no other
+      category having any candidates either (no Association cricket
+      facility exists), Gemini had no guardrail describing why cricket
+      stadiums would be relevant to a "learn cricket" question, and
+      declined the whole thing rather than using them. This is the same
+      "compound/valid request has no matching guardrail framing → wrongly
+      declines" failure shape hit several times earlier today, just
+      surfacing through the guardrail's own worded scope this time rather
+      than an empty candidate list
+- [x] Fixed by explicitly adding "learn/coached/trained in a sport" to
+      the spectatorVenueRecommendations guardrail's description of when
+      to use that list, and noting the facilities guardrail already gets
+      a pre-filtered Association-only list for a learn question, no
+      further narrowing needed from Gemini's side
+- [x] Verified live: "I want to learn cricket" now correctly returns the
+      real cricket stadiums 3/3 (previously declining 3/3); "learn
+      tennis" correctly blends both real groups; "where can I play
+      cricket/badminton" unaffected (still private-facility-only, no
+      spectator leakage); "watch a cricket match" (pure spectate, no
+      learn) still unaffected; gaming, named temple lookup, and the
+      off-topic decline all still correct
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

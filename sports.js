@@ -294,7 +294,18 @@ const AREA_KEYWORDS = [
 const SPECTATOR_TRIGGER =
   /\bstadiums?\b|\bspectator\b|watch(ing)?\b[^.!?]{0,25}\b(match|game)\b|\b(cricket|football|hockey)\s+(match|game)\b|\bticket(s)?\b/;
 const FACILITY_TRIGGER =
-  /\bplay\b|\bbook(ing)?\b|\bcourt\b|\bturf\b|\bclub\b|\bpractice\b|\bcoaching\b|\brent(al)?\b|\bmembership\b|\brooftop\b/;
+  /\bplay\b|\bbook(ing)?\b|\bcourt\b|\bturf\b|\bclub\b|\bpractice\b|\brent(al)?\b|\bmembership\b|\brooftop\b/;
+// "Learn a sport" is deliberately routed toward the Government/
+// Institutional/Association-operated venues, not the private bookable
+// ones — per explicit instruction: someone wanting to LEARN a sport
+// (coaching, training) is pointed at spectatorVenues (every entry there
+// is government/institutional/association-run) plus whichever
+// sportsFacilities entries are themselves Association-operated (All
+// Assam Tennis Association, Assam Archery Club) — never the plain
+// Private-operated facilities, which stay reserved for "where can I
+// play" instead. "Coaching" moved out of FACILITY_TRIGGER into this
+// trigger for the same reason.
+const LEARN_TRIGGER = /\blearn(ing)?\b|\bcoach(ing)?\b|\btrain(ing)?\b/;
 // Broadened during testing: "fun indoor activities for families" (a very
 // natural way to ask about this whole category) originally matched
 // nothing at all, since every word in the original trigger was a named
@@ -357,7 +368,14 @@ function getRelevantSpectatorVenues(message) {
   const matchedNames = matchKeywords(text, SPECTATOR_NAME_KEYWORDS, 'name');
   const matchedAreas = matchKeywords(text, AREA_KEYWORDS, 'area');
   const matchedActivities = matchActivities(text);
-  const ownSignal = hasSpectatorSignal(text);
+  // "Learn/coaching/training" always gives this group its own signal —
+  // see the comment on LEARN_TRIGGER above. Deliberately not folded into
+  // hasSpectatorSignal itself, since that function is also what
+  // getRelevantSportsFacilities checks to decide whether to defer to
+  // this group — if it were, a "learn cricket" question would make
+  // facilities wrongly defer entirely instead of applying its own
+  // Association-only filter below.
+  const ownSignal = hasSpectatorSignal(text) || LEARN_TRIGGER.test(text);
 
   if (!ownSignal && matchedAreas.length === 0) return [];
   if (matchedNames.length > 0) {
@@ -396,19 +414,32 @@ function getRelevantSportsFacilities(message) {
   const matchedAreas = matchKeywords(text, AREA_KEYWORDS, 'area');
   const matchedActivities = matchActivities(text);
   const wantsRooftop = ROOFTOP_TRIGGER.test(text);
+  const wantsToLearn = LEARN_TRIGGER.test(text);
   const explicitSignal = hasFacilityExplicitSignal(text);
-  const ownSignal = explicitSignal || matchedActivities.size > 0;
+  const ownSignal = explicitSignal || matchedActivities.size > 0 || wantsToLearn;
 
   if (!ownSignal && matchedAreas.length === 0) return [];
   if (matchedNames.length > 0) {
     return sportsFacilities.filter((f) => matchedNames.includes(f.name));
   }
+  // Deliberately checks the ORIGINAL hasSpectatorSignal here, not
+  // whether spectator also picked up a learn-trigger — so "learn
+  // cricket" doesn't make this group wrongly defer to spectator; it
+  // still gets to apply its own Association-only filter below instead.
   if (!explicitSignal && (hasSpectatorSignal(text) || hasGamingExplicitSignal(text))) {
     return [];
   }
 
   let results = sportsFacilities;
   let filterApplied = false;
+  // "Learn/coaching/training" narrows to only the Association-operated
+  // facilities (All Assam Tennis Association, Assam Archery Club) — the
+  // plain Private-operated ones are reserved for "where can I play"
+  // instead, per explicit instruction.
+  if (wantsToLearn) {
+    results = results.filter((f) => f.operator.includes('Association'));
+    filterApplied = true;
+  }
   if (matchedActivities.size > 0) {
     results = results.filter((f) => f.activities.some((a) => matchedActivities.has(a)));
     filterApplied = true;
