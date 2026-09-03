@@ -149,8 +149,13 @@ const AREA_KEYWORDS = [
 
 // "Open every day" is one of the explicit examples this feature needs to
 // support, so it gets its own dedicated filter rather than being left to
-// chance in the highlight text.
-const OPEN_DAILY_TRIGGER = /open\s*(every\s*day|daily|all\s*(week|days))|no\s*(off\s*day|holiday)/;
+// chance in the highlight text. Broadened during a later audit: "open
+// every SINGLE day" (a real, natural phrasing) originally matched
+// nothing, since the pattern required "every" and "day" to sit right
+// next to each other with no word in between; "no closing day" was also
+// missing from the "no ___ day" half. Fixed by allowing "single" in the
+// middle and adding "closing" as a recognized "off day" synonym.
+const OPEN_DAILY_TRIGGER = /open\s*(every\s*(single\s*)?day|daily|all\s*(week|days))|no\s*(off|closing)\s*day|no\s*holiday/;
 
 const PARK_TRIGGER = /\bparks?\b|\bgardens?\b|\budyan\b|\bkanan\b|\briverfront\b|\bpromenade\b/;
 

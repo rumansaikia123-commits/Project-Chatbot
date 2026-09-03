@@ -429,6 +429,22 @@ const HOTEL_TRIGGER =
 const GENERAL_STAY_TRIGGER =
   /place\s?to\s?stay|somewhere\s?to\s?(stay|sleep)|spend\s+(a|the)\s+night|\bovernight\b|room\s?to\s?crash|crash\s?(for|the)?\s?(the\s)?night|\bcrash\s?(here|there)?\b/;
 
+// Recognizes the most common trigger words from the OTHER category files
+// (restaurants, cinemas, temples, shops, attractions, sports, hospitals,
+// transport) — NOT to do any of their matching, just to recognize "this
+// message is clearly about something else." Used only to defer when this
+// category's own match is nothing more than a shared area name — found
+// necessary after a real reported bug: "shopping in Fancy Bazaar" was
+// also surfacing real hotels and homestays, since "Fancy Bazaar" is a
+// genuine area tag in both accommodations.js and shops.js, and neither
+// file had any awareness the other existed. Nearly every Guwahati
+// locality (GS Road, Christian Basti, Beltola, Six Mile, Zoo Road...)
+// appears in multiple category files, so this is a general architectural
+// gap, not a one-off — this trigger closes it for the whole class rather
+// than just the one reported case.
+const OTHER_CATEGORY_TRIGGER =
+  /\brestaurants?\b|\bcafes?\b|\bfood\b|\bcuisine\b|\bcinemas?\b|\bmovies?\b|\bfilms?\b|\btemples?\b|\bmandirs?\b|\bshops?\b|\bshopping\b|\bmarkets?\b|\bmalls?\b|\bbazaars?\b|\battractions?\b|\bsightseeing\b|\bwildlife\b|\bsports?\b|\bstadiums?\b|\bhospitals?\b|\bclinics?\b|\bcruise\b|\bferry\b/;
+
 const RESORT_NAME_KEYWORDS = [
   { pattern: /mayfair|spring\s?valley/, name: 'Mayfair Spring Valley Resort, Guwahati' },
   { pattern: /brahmaputra\s?jungle/, name: 'Brahmaputra Jungle Resort' },
@@ -599,7 +615,7 @@ function getRelevantHotels(message) {
   // signal that should claim this one (confirmed via testing: this exact
   // case regressed before this comment was added, and was fixed by
   // checking hasHotelSignal here instead of ownSignal).
-  if (!hasHotelSignal(text) && (hasResortSignal(text) || hasHomestaySignal(text))) {
+  if (!hasHotelSignal(text) && (hasResortSignal(text) || hasHomestaySignal(text) || OTHER_CATEGORY_TRIGGER.test(text))) {
     return [];
   }
 
@@ -634,7 +650,7 @@ function getRelevantResorts(message) {
   // match, so this category's own specific signal (e.g. "nature") still
   // wins even when the shared generic phrase ("spend a night") also
   // happens to be present in the same message.
-  if (!hasResortSignal(text) && (hasHotelSignal(text) || hasHomestaySignal(text))) {
+  if (!hasResortSignal(text) && (hasHotelSignal(text) || hasHomestaySignal(text) || OTHER_CATEGORY_TRIGGER.test(text))) {
     return [];
   }
 
@@ -673,7 +689,7 @@ function getRelevantHomestays(message) {
     return homestays.filter((h) => matchedNames.includes(h.name));
   }
   // See the matching comment in getRelevantHotels above.
-  if (!hasHomestaySignal(text) && (hasHotelSignal(text) || hasResortSignal(text))) {
+  if (!hasHomestaySignal(text) && (hasHotelSignal(text) || hasResortSignal(text) || OTHER_CATEGORY_TRIGGER.test(text))) {
     return [];
   }
 

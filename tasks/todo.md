@@ -1945,6 +1945,126 @@ nightlife venues stay as plain text for now.
       transport, adventure sport, and a genuinely off-topic question —
       all show zero hospital-data leakage and are otherwise unaffected
 
+## Full cross-file audit — 49 questions across all 11 category files (2026-09-03)
+- [x] User asked for a comprehensive stress test: at least 4 critical
+      (not easy) questions per .js file, plus several deliberately
+      compound cross-category questions, reporting issues found rather
+      than fixing them yet
+- [x] Process lesson, not a code bug: partway through the 49-question run
+      the Gemini API started returning errors for every remaining
+      question. Confirmed this was the free-tier API rate/quota limit
+      being exhausted by the volume of testing (49 questions, several
+      earlier in the same session), not an app issue — re-ran the
+      remaining 25 questions afterward with pacing (1.5s between calls)
+      and everything came through cleanly. Worth remembering for future
+      large test batches: space them out, don't fire dozens in tight
+      concurrent batches
+- [x] Found and fixed (in `parks.js`): "which park is open every single
+      day with no closing day?" matched nothing — `OPEN_DAILY_TRIGGER`
+      only recognized "open every day" with no words in between (broke
+      on "every SINGLE day"), and never recognized "no closing day" at
+      all (only "no off day"/"no holiday"). Broadened; reverified all 10
+      real always-open parks return correctly, existing phrasings
+      ("open every day", "no off day", "open daily") unaffected
+- [x] Found, confirmed still present, not yet fixed: the Fancy Bazaar/
+      hotel cross-file leak flagged earlier this session ("shopping in
+      Fancy Bazaar" still has real hotel/homestay candidates available at
+      the data layer) — the one earlier clean live result was Gemini
+      choosing not to use the leaked candidates that specific time, not
+      the underlying issue being fixed. Queued as its own step
+- [x] Found a new issue: "best park for both birdwatching and boating" —
+      a real, matched, non-empty-data query — declined or gave an empty
+      answer 3 times out of 5 in live retesting. Root cause: unlike
+      attractions.js (fixed earlier today for the same "adventure sport"
+      class of bug), the parks guardrail never states, as its own
+      explicit rule, "if the list is non-empty, always use it, never ask
+      or decline" — it's implied by contrast with the vague-question
+      case, but never stated as its own mandatory rule the way
+      attractions.js's was. Queued as its own step
+- [x] Everything else across all 11 files and 5 compound cross-category
+      questions (a full-day 5-category itinerary, airport+hotel+hospital,
+      a 2-day cruise+sport trip, learn-tennis+hotel+cab, and an
+      area-triangulation question blending restaurants+shops+hotels+
+      hospitals) worked correctly, including several genuinely strong
+      multi-category blends
+
+## Fixing the audit findings, step by step, per direct instruction
+- [x] **Step 1**: separately, the user tested "what's the best local food
+      to try?" live and found a real, visible bug: the reply's opening
+      paragraph correctly described real Assamese dishes (Khar, Masor
+      Tenga, bamboo shoot, Joha rice) from general knowledge, but the
+      restaurant cards shown underneath were 10 generic cafes/bars with
+      no connection to local cuisine at all. Investigated: this was NOT
+      a missing-data problem — 5 real, verified Assamese restaurants
+      already existed in `restaurants.js` (Mising Kitchen, Gams Delicacy,
+      Khorikaa, The Guwahati Address, Aroma: Modern Dining) and "Assamese
+      food restaurants" already correctly matched all 5. The actual bug:
+      "local food"/"traditional food"/"authentic food"/"regional
+      cuisine" — all completely natural ways to ask this exact question —
+      matched NONE of the cuisine keywords, so the query fell through to
+      the generic top-rated-overall fallback instead, which ignores
+      cuisine entirely. Confirmed scope with the user before fixing: keep
+      it to the matching fix for the existing 5 restaurants, not a
+      research/expansion pass (that stays a future option)
+- [x] Fixed by folding "local food"/"traditional (Assamese) food"/
+      "authentic (Assamese) food"/"native food"/"regional (Assamese)
+      food or cuisine" into the same CUISINE_KEYWORDS pattern that
+      already matched "Assamese" — these phrases are unambiguous
+      synonyms for Assamese cuisine in a Guwahati-only app, so there's no
+      real ambiguity risk in treating "local" this specifically here
+- [x] Verified live: "what's the best local food to try?" now correctly
+      returns real Assamese restaurants (Mising Kitchen, Gams Delicacy,
+      Khorikaa) with the reply text now genuinely tied to the cards shown
+      instead of describing dishes disconnected from generic cafes.
+      Regression-checked: explicit "Assamese food" still matches all 5;
+      unrelated cuisines (Chinese) and the generic "top rated cafes"
+      fallback are both unaffected
+
+- [x] **Step 2**: added an explicit MANDATORY rule to the parks guardrail
+      — "whenever the park list is non-empty, present it directly, never
+      ask a clarifying question or decline, even for a two-activity
+      request like 'birdwatching AND boating'" — mirroring the fix
+      already made for attractions.js's "adventure" wording earlier
+      today. Previously this was only implied by contrast with the
+      empty-list case, never stated as its own hard rule
+- [x] Verified live: "best park for both birdwatching and boating" now
+      5/5 correct (previously 2/5). Full regression pass: the vague-park
+      clarifying question still correctly fires for "tell me about
+      parks" and for a genuinely vague park mention inside a 5-category
+      itinerary (which still correctly answers cinema/shopping/dinner/
+      nightlife in full while asking just about the park); the Step 1
+      "open every single day" fix, a named park lookup, and a narrow
+      "boating" query are all unaffected
+
+- [x] **Step 3**: the Fancy Bazaar/hotel cross-file leak. Recognized this
+      as a broader architectural gap rather than a one-off: nearly every
+      Guwahati locality (GS Road, Christian Basti, Beltola, Six Mile,
+      Zoo Road...) appears in multiple category files, so the same leak
+      could happen for restaurants/cinemas/attractions/sports/hospitals
+      sharing an area with accommodations.js too, not just shops
+- [x] Fixed with a new `OTHER_CATEGORY_TRIGGER` in `accommodations.js` —
+      recognizes the most common trigger words from every OTHER category
+      file (restaurant/food, cinema/movie, temple, shop/market/mall,
+      attraction/sightseeing/wildlife, sport/stadium, hospital/clinic,
+      cruise/ferry), used only to defer when an accommodation category's
+      own match is nothing more than a shared area name — added as a
+      third deference condition alongside the existing sibling checks in
+      all three of getRelevantHotels/getRelevantResorts/
+      getRelevantHomestays
+- [x] Verified: "shopping in Fancy Bazaar" now correctly returns zero
+      hotels/homestays at both the data layer and live; extended checks
+      confirmed the same leak class is now closed for other shared areas
+      too ("restaurant near GS Road", "cinema in Christian Basti",
+      "temple in Beltola" all correctly return zero accommodation
+      candidates). Full regression pass: hotels/homestays still work
+      correctly when they DO have their own explicit signal ("hotels
+      near Zoo Road", "airbnb near Kamakhya"), a genuinely generic
+      "places to stay near Zoo Road" still correctly matches all
+      relevant groups, an explicit hotel+hospital compound question
+      still works, wildlife-resort matching is unaffected, and the
+      earlier "room to crash" decline fix, learn-tennis routing, named
+      temple lookups, and the off-topic decline are all unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

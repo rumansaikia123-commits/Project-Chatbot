@@ -250,7 +250,19 @@ const restaurants = [
 // appears in the list above, with common synonyms folded in. Returns the
 // set of canonical cuisines the visitor's message seems to be asking for.
 const CUISINE_KEYWORDS = [
-  { pattern: /assames[ea]/, cuisine: 'Assamese' },
+  // Broadened after a real reported bug: "what's the best local food to
+  // try" — an extremely natural way to ask this exact question — matched
+  // none of these words, so it fell through to the generic top-rated-
+  // overall fallback instead of the 5 real Assamese restaurants that DO
+  // exist (Mising Kitchen, Gams Delicacy, Khorikaa, The Guwahati Address,
+  // Aroma: Modern Dining) — a visible mismatch between the reply text
+  // (accurately describing Khar/Masor Tenga from general knowledge) and
+  // the cards shown (generic cafes/bars with no connection to local
+  // cuisine). "Local"/"traditional"/"authentic"/"native"/"regional food"
+  // are unambiguous synonyms for Assamese cuisine in a Guwahati-only app,
+  // so they're folded into this same pattern rather than the generic
+  // word "local" being left to mean nothing.
+  { pattern: /assames[ea]|local\s?food|traditional\s?(assamese\s?)?food|authentic\s?(assamese\s?)?food|native\s?food|regional\s?(assamese\s?)?(food|cuisine)/, cuisine: 'Assamese' },
   { pattern: /north\s?eastern|\bne\s?cuisine\b/, cuisine: 'North Eastern' },
   { pattern: /\btribal\b/, cuisine: 'Tribal' },
   { pattern: /\bcontinental\b/, cuisine: 'Continental' },
