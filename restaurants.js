@@ -57,10 +57,10 @@ const restaurants = [
     address: 'Tayabullah Rd, Dighalipukhuri East, Uzan Bazar, Guwahati, Assam 781001' },
 
   // ----- Dispur / Tarun Nagar -----
-  { name: 'Chakkranosh', area: 'Dispur', cuisines: ['North Indian', 'Mughlai', 'Biryani', 'Asian'],
+  { name: 'Chakkranosh', area: 'Ulubari, BK Kakati Road', cuisines: ['North Indian', 'Mughlai', 'Biryani', 'Asian'],
     costForTwo: 900, rating: 4.6,
-    highlight: 'Top-rated gourmet Indian, near the Secretariat.',
-    address: 'Dispur, Near Secretariat, Guwahati, Assam' },
+    highlight: 'Top-rated gourmet Indian in Ulubari.',
+    address: 'BK Kakati Road, Ulubari, Guwahati, Assam' },
   // The Maroon Room is also a venues.js nightlife venue — rating/area matched to that entry.
   { name: 'The Maroon Room', area: 'Dispur', cuisines: ['Japanese', 'Italian', 'Continental'],
     costForTwo: 2500, rating: 4.6,
