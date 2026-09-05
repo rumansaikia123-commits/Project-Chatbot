@@ -456,7 +456,30 @@ function getRelevantRestaurants(message) {
   // means a narrow match ("Chinese food near Six Mile", 1 result) is
   // unaffected, while a broad one ("cafes", ~27 matches) becomes a concise
   // top-10 "best of" list instead of either nothing or a huge unsorted wall.
-  const sorted = [...results].sort((a, b) => b.rating - a.rating);
+  //
+  // Real bug reported: "Chinese restaurant in Guwahati?" put Cafe Maya
+  // first, purely because it has the highest rating (4.9) among Chinese-
+  // tagged places — even though a visitor who explicitly said "restaurant"
+  // pictures a sit-down restaurant, not a cafe that happens to also serve
+  // Chinese food. Per explicit instruction, a shop-like place (cafe,
+  // mithai, bakery, street food) is NOT removed here — it's still a real,
+  // relevant match, the earlier "cuisine-specific matches should still
+  // win" decision stands — but when "restaurant"/"lunch"/"dinner" was
+  // explicitly said, it's ranked below every non-shop-like match, with
+  // rating only breaking ties within each of those two groups, not across
+  // them. A visitor who explicitly asks for a cafe/mithai/bakery/street
+  // food (mentionedShopLikeCuisine) is unaffected — this only demotes,
+  // never promotes, and only when a "proper meal" was asked for without
+  // asking for the shop-like thing directly.
+  const isShopLike = (r) => r.cuisines.some((c) => SHOP_LIKE_CUISINES.has(c));
+  const sorted = [...results].sort((a, b) => {
+    if (wantsProperMeal && !mentionedShopLikeCuisine) {
+      const aShopLike = isShopLike(a);
+      const bShopLike = isShopLike(b);
+      if (aShopLike !== bShopLike) return aShopLike ? 1 : -1;
+    }
+    return b.rating - a.rating;
+  });
   return sorted.slice(0, TOP_N);
 }
 

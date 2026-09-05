@@ -2112,6 +2112,44 @@ nightlife venues stay as plain text for now.
       2000ms..." message appears and whether it's followed by a
       successful attempt
 
+## Bug fix: a cafe was ranking first when asked for a "restaurant"
+- [x] Reported live: asking "Chinese restaurant in Guwahati?" put Cafe
+      Maya (rating 4.9, genuinely tagged Chinese cuisine) as the FIRST
+      result — ahead of actual sit-down restaurants — purely because it
+      has the highest rating among the Chinese-tagged matches
+- [x] Confirmed this was NOT the filtering logic misbehaving — Cafe Maya
+      is correctly included, not a bug, per the earlier explicit decision
+      that a cuisine-specific match should still win even if the place is
+      a cafe. This was purely a ranking/ordering problem: plain
+      rating-only sorting doesn't know a visitor who says "restaurant"
+      pictures a sit-down restaurant, not a cafe
+- [x] Discussed the trade-off with the user and confirmed the fix: keep
+      cafes/mithai/bakery/street-food places in the results (still useful,
+      still genuinely cuisine-matched), but when "restaurant"/"lunch"/
+      "dinner" was explicitly said (and the visitor didn't ALSO explicitly
+      ask for a cafe/mithai/bakery/street food), rank every non-shop-like
+      place ahead of every shop-like one — rating only breaks ties within
+      each of those two groups, never across them
+- [x] Implemented in `restaurants.js`'s `getRelevantRestaurants`: replaced
+      the plain `sort((a, b) => b.rating - a.rating)` with a comparator
+      that groups by "is this place shop-like" first (only when
+      `wantsProperMeal` is true and no shop-like cuisine was explicitly
+      requested), then falls back to rating within each group
+- [x] Verified at the data layer directly: "Chinese restaurant in
+      Guwahati?" now orders Confucius, JholoeKiya, Red Hot Chilli Pepper,
+      Dine Way Platz, The Guwahati Address, Pirates of Grill (all real
+      restaurants) BEFORE Cafe Maya and Kiranshree Sweets (both
+      shop-like), matching the requested fix exactly
+- [x] Regression-checked: "cafes in Uzan Bazaar" and "top rated cafes"
+      still rank purely by rating (Pause. and Cafe Maya still lead) since
+      no "restaurant"/"lunch"/"dinner" wording was used; "cheap North
+      Indian near Khanapara" still correctly returns nothing (a genuine
+      no-match, unrelated to this change, not a regression)
+- [x] Verified live through the actual running dev server (not just the
+      data layer) — asked "Chinese restaurant in Guwahati?" through
+      `/api/chat` and confirmed the real reply lists Cafe Maya 7th out of
+      8, with genuine restaurants ranked ahead
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
