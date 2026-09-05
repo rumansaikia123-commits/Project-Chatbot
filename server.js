@@ -377,6 +377,33 @@ app.use(express.static('public'));
 // (this key is never sent to the browser — it stays on the server)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// Gemini occasionally returns a 503 "this model is currently
+// experiencing high demand" error — confirmed live on the deployed site
+// via Render's own logs, showing the exact message: {"code":503,
+// "message":"...Spikes in demand are usually temporary...",
+// "status":"UNAVAILABLE"}. Since Google's own message says these spikes
+// are temporary, a couple of automatic retries with a short pause often
+// succeeds without the visitor ever seeing an error — cheaper and
+// simpler than moving to a paid plan, and worth trying first. Only
+// retries on this specific overload signal; a genuinely different
+// problem (a bad request, an invalid key, etc.) fails immediately
+// instead of retrying pointlessly.
+async function generateContentWithRetry(config, maxRetries = 2, delayMs = 2000) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await ai.models.generateContent(config);
+    } catch (error) {
+      const message = error.message || '';
+      const isOverloaded = message.includes('UNAVAILABLE') || message.includes('"code":503') || message.includes('overloaded') || message.includes('high demand');
+      if (!isOverloaded || attempt === maxRetries) {
+        throw error;
+      }
+      console.error(`Gemini overloaded (attempt ${attempt + 1} of ${maxRetries + 1}) — retrying in ${delayMs}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
 // This is the endpoint the webpage will call whenever the visitor sends a message.
 // It expects the full conversation so far (an array of messages), so Gemini
 // can remember earlier turns, e.g. "what about day 2".
@@ -466,7 +493,7 @@ app.post('/api/chat', async (req, res) => {
       `${allVisitorText} ${relevantTemples.map((t) => t.area).join(' ')}`
     );
 
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry({
       // gemini-3.6-flash does an invisible "thinking" step that was eating
       // almost the entire maxOutputTokens budget, cutting real replies short.
       // flash-lite skips that step, and its free tier allows far more

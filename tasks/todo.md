@@ -2065,6 +2065,53 @@ nightlife venues stay as plain text for now.
       earlier "room to crash" decline fix, learn-tennis routing, named
       temple lookups, and the off-topic decline are all unaffected
 
+## Live-site testing found a real Gemini overload issue; added retry logic (2026-09-04/05)
+- [x] User asked me to test the actual deployed Render site (not just my
+      local dev server) for the first time this session. Confirmed the
+      URL, confirmed the latest code was actually deployed (Manual
+      Deploy click, matching commit hash visible in Render's deploy log)
+- [x] Found every single request to the live site failing with a generic
+      500 error. Walked the user through finding the real underlying
+      error in Render's own dashboard logs (searching for "Gemini"),
+      since the app deliberately never exposes internal error details to
+      visitors. The real error, straight from Google's SDK: `{"code":503,
+      "message":"This model is currently experiencing high demand.
+      Spikes in demand are usually temporary. Please try again
+      later.","status":"UNAVAILABLE"}` — a genuine capacity/overload
+      issue on Google's Gemini infrastructure, not a quota problem
+      (that would be a 429), not a code bug, and not a stale deploy
+- [x] Confirmed intermittent, not constant: of ~10 live attempts across
+      several checks over about a day, exactly 1 succeeded with a real,
+      correct reply (mythology framing intact) — the rest all hit the
+      same 503. This ruled out my first guess (shared daily quota
+      exhausted from heavy local testing) and confirmed it really is
+      Google's own service having a rough patch, independent of anything
+      in this project
+- [x] User asked whether upgrading to a paid Gemini tier would help.
+      Answered honestly: probably somewhat (paid traffic generally gets
+      more reliable capacity than free-tier during high-demand periods),
+      but suggested a free, zero-cost mitigation first, since Google's
+      own error message says these spikes are "usually temporary" — a
+      strong hint that automatic retry logic would help without needing
+      to spend anything
+- [x] Added `generateContentWithRetry()` in `server.js`, wrapping the
+      existing `ai.models.generateContent(...)` call: on this specific
+      "UNAVAILABLE"/"high demand"/503 error signal, automatically retries
+      up to 2 more times with a 2-second pause between attempts before
+      giving up and showing the visitor the existing generic error. Any
+      OTHER kind of error (a genuinely bad request, an invalid key, etc.)
+      still fails immediately, exactly as before — this only adds
+      patience for the one specific, known-temporary failure mode
+- [x] Verified locally: the normal happy path (a real Gemini call
+      succeeding on the first try) is completely unaffected — the
+      wrapper only ever adds delay when Gemini itself has already failed
+      with this specific error. Could not force a live 503 on demand to
+      directly test the retry path itself, so its real-world effect will
+      be visible once deployed and Gemini has another rough patch — worth
+      keeping an eye on Render's logs for whether the "retrying in
+      2000ms..." message appears and whether it's followed by a
+      successful attempt
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
