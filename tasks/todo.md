@@ -2283,6 +2283,98 @@ nightlife venues stay as plain text for now.
       entry in that fallback (Gemini already only narrates a few of the
       matched places in prose, not all of them — unchanged behavior)
 
+## Add outstation travel destinations (Upper/Lower Assam, NE capitals, key tourist spots)
+- [x] Prompted by "How to go to Shillong from Guwahati?" — tested live and
+      found it declined as off-topic, even though `transport.js` already
+      has real cab businesses whose own highlight text names Shillong,
+      Cherrapunjee, Dawki, Kaziranga, and Tawang. Root cause: `CAB_TRIGGER`
+      only fires on words like "cab"/"outstation"/"car rental" — never on
+      the far more natural "how do I get to X" phrasing. Confirmed the
+      same gap live for Jorhat, Nalbari, Itanagar, Cherrapunjee, Dawki,
+      Kaziranga, and Tawang too (8 phrasings tested, all declined)
+- [x] Researched real facts before building anything, since this project
+      never invents travel/safety facts: Shillong has NO railway station
+      at all (nearest is Guwahati itself, ~99 km away); same for
+      Cherrapunjee and Dawki (no rail anywhere in Meghalaya); Kaziranga's
+      nearest railhead (Furkating) is itself 75 km from the park; Tawang
+      has no airport/railway and needs an Inner Line Permit; of the NE
+      capitals, only Agartala has a genuine direct train from Guwahati —
+      Itanagar/Kohima/Aizawl only reach a *nearby* town by rail
+      (Naharlagun/Dimapur/Bairabi) with a road journey onward, Imphal's
+      rail line doesn't reach the city yet, and Gangtok has no rail in
+      Sikkim at all and isn't really a "from Guwahati" road trip the way
+      the others are
+- [x] Also confirmed with the user a second behavior: for a real nearby
+      place NOT on the curated list, give a brief general-knowledge
+      answer instead of declining — scoped specifically to Assam and the
+      other Northeast Indian states (matching what the real cab
+      businesses already say they cover), never stretched to a distant
+      Indian city or another country
+- [x] Researched exact distances for all 20 places (Upper Assam: Jorhat,
+      Dibrugarh, Sivasagar, Tinsukia, Golaghat; Lower Assam: Nalbari,
+      Barpeta, Bongaigaon, Goalpara; NE capitals: Shillong, Itanagar,
+      Kohima, Imphal, Aizawl, Agartala, Gangtok; named tourist spots:
+      Cherrapunjee, Dawki, Kaziranga, Tawang) via web search, using
+      ranges where independent sources genuinely disagreed rather than
+      forcing false precision
+- [x] Added a `destinations` array to `transport.js` (20 entries: name,
+      region, state, distanceFromGuwahati, a hand-written honest
+      transportNote per place, highlight) plus `DESTINATION_NAME_KEYWORDS`
+      and `getRelevantDestinations()` (name-match only — an uncurated
+      place is deliberately not this function's job, see below)
+- [x] Added `OUTSTATION_TRAVEL_TRIGGER` ("how do I get/go/reach/travel to
+      X from Guwahati") and broadened `getRelevantCabServices` so a
+      destination-name match OR this trigger counts as cab signal,
+      alongside the existing `CAB_TRIGGER` words — the real cab
+      businesses serve the whole region regardless of which exact place
+      is named. Deliberately required "from Guwahati" in the new trigger
+      (unlike a bare name match) specifically so "how do I get to
+      Kamakhya" doesn't also pick up irrelevant outstation cab content —
+      verified this distinction live
+- [x] Extended `systemPrompt.js`'s on-topic scope paragraph: travel FROM
+      Guwahati to elsewhere in Assam/the Northeast now explicitly counts
+      as on-topic, mirroring the existing "travel TO Guwahati counts"
+      line; a distant Indian city or another country stays the standard
+      off-topic decline, explicitly noting that a non-empty
+      `cabServiceRecommendations` list (these businesses aren't
+      destination-restricted in the data) is not permission to answer a
+      distant-city question
+- [x] Added `formatDestinationList()` and a two-tier guardrail: (1) for
+      the 20 curated places, copy the verified distance and "how to get
+      there" note exactly — several have no train at all and must never
+      be described as train-reachable; an Inner Line Permit mention
+      (Itanagar, Tawang) must always be passed along; (2) for any OTHER
+      real place in Assam/the Northeast, give a brief, plainly-caveated
+      general answer instead of declining — explicitly the one place in
+      the whole app where non-hand-verified general knowledge is
+      deliberately allowed into a factual answer, kept narrow on purpose
+- [x] Wired `relevantDestinations` through `server.js` (import, compute,
+      appended as `buildSystemPrompt`'s final argument) — no schema
+      change needed, since the actionable card is the existing
+      `cabServiceRecommendations` array and the destination facts live in
+      "reply" text, same as the Pobitora note added earlier this session
+- [x] Verified live through the actual running dev server against all 8
+      originally-broken phrasings — each now gets a real, honest answer.
+      Confirmed critically: Shillong's reply states plainly there is no
+      train, ever; Tawang's reply mentions the Inner Line Permit and the
+      helicopter alternative; Jorhat's reply correctly says both train
+      and bus are available
+- [x] Verified the new "uncurated but nearby" case live: "How do I get to
+      Silchar from Guwahati?" (a real Assam town not on the curated list)
+      returned a brief, honestly-caveated general answer plus the real
+      cab services, instead of a decline
+- [x] Verified the scope boundary live: "How do I get to Delhi from
+      Guwahati?" still gets the standard off-topic decline, with
+      `cabServiceRecommendations` correctly empty in the reply even
+      though the array is non-empty at the data layer for that message
+- [x] Regression-checked live: "day trip to Pobitora" (attractions.js,
+      unrelated file) unaffected; a plain "how do I get around within
+      Guwahati" question still gives the existing generic bus/auto/
+      ride-hailing answer with no cab-service noise; "self drive to
+      Shillong" correctly shows Onroadz Self Drive (which specifically
+      mentions Meghalaya trips) with zero chauffeur-cab noise, while
+      still surfacing Shillong's honest no-train note in the reply
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
