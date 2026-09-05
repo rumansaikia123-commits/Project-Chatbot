@@ -122,7 +122,7 @@ const attractions = [
 
   { name: 'Pobitora-Mayong Circuit', area: 'Mayong / Pobitora', tier: 2, rank: 18, distanceFromDispur: '~45-55 km',
     themes: ['wildlife-sanctuary', 'cultural-centre', 'scenic-nature', 'day-trip'],
-    highlight: "Combined excursion pairing Pobitora wildlife with Mayong's folklore and heritage." },
+    highlight: "Combined excursion pairing Pobitora wildlife with Mayong's folklore and heritage, typically reached via Chandrapur on the way out of the city." },
 
   { ...fromPark('Dighalipukhuri Park'), tier: 3, rank: 19, distanceFromDispur: '~7 km',
     themes: ['park-garden', 'lake-water-body', 'historical-site', 'scenic-nature', 'family-attraction'],
@@ -182,7 +182,12 @@ const attractions = [
 
   // "Nature Resorts" dropped from this entry's themes — Resorts/Hotels
   // will be their own separate category later, not folded in here.
-  { name: 'Chandrapur', area: 'Northeast Guwahati', tier: 3, rank: 33, distanceFromDispur: '~30-35 km',
+  // distanceFromDispur corrected from an earlier "~30-35 km" — verified
+  // against Wikipedia and Uber Intercity's route data, which both put
+  // real-world Chandrapur at ~15 km from Guwahati, on the same road
+  // towards Pobitora/Mayong (Wikipedia even notes it sits close to both
+  // Pobitora and Amchang wildlife sanctuaries).
+  { name: 'Chandrapur', area: 'Northeast Guwahati', tier: 3, rank: 33, distanceFromDispur: '~15 km',
     themes: ['scenic-nature', 'lake-water-body', 'day-trip'],
     highlight: 'Green semi-rural landscape on the outskirts of Guwahati.' },
 
@@ -285,7 +290,17 @@ const THEME_KEYWORDS = [
   { pattern: /wetland/, theme: 'wetland' },
   { pattern: /\blake\b|water\s?body/, theme: 'lake-water-body' },
   { pattern: /archaeolog/, theme: 'archaeological-site' },
-  { pattern: /day\s?trip|excursion|day\s?tour/, theme: 'day-trip' },
+  // Real bug reported: "plan me a 2-day trip" was matching THIS pattern,
+  // since "day trip" is literally a substring of "2-day trip" — a visitor
+  // describing a trip of 2 days' length, not asking for a day-trip
+  // excursion. That false match narrowed attractions.js down to ONLY its
+  // 10 day-trip-tagged places (Pobitora, Mayong, Madan Kamdev, Chandubi,
+  // etc.), skipping the file's own Tier-1 fallback entirely and hiding
+  // Kamakhya/the river cruise/every other in-city landmark. The lookbehind
+  // guards below block a match when "day" is immediately preceded by a
+  // duration number (digit or spelled-out number + space/hyphen), while
+  // leaving genuine day-trip requests ("day trip to Pobitora") untouched.
+  { pattern: /(?<!\d[\s-])(?<!\b(?:one|two|three|four|five|six|seven|eight|nine|ten)[\s-])\bday\s?(?:trip|tour)\b|\bexcursion\b/, theme: 'day-trip' },
   // Narrowed from also matching the bare word "activity"/"activities" —
   // that was far too generic and is why Guwahati Planetarium/Regional
   // Science Centre (both had this theme tagged on, incorrectly — neither
@@ -409,7 +424,14 @@ function getRelevantAttractions(message) {
 
   const noSpecificFilter = matchedThemes.size === 0 && matchedAreas.length === 0;
   if (noSpecificFilter) {
-    results = attractions.filter((a) => a.tier === 1);
+    // Pobitora-Mayong Circuit is tier 2, so it wouldn't normally appear
+    // here — but the multi-day-itinerary guardrail in systemPrompt.js
+    // specifically needs it available for a generic "plan a 2-day trip"
+    // question (it's the single combined excursion Gemini is told to
+    // offer as Day 2's "or" option), so it's force-included alongside
+    // the real Tier 1 fallback rather than promoting its tier and
+    // changing how it ranks everywhere else.
+    results = attractions.filter((a) => a.tier === 1 || a.name === 'Pobitora-Mayong Circuit');
   }
 
   const sorted = [...results].sort((a, b) => a.rank - b.rank);

@@ -810,6 +810,40 @@ that doesn't appear in reply at all. For a single-day plan, or any normal
 question that isn't a multi-day itinerary, leave "day" null on every
 recommendation.
 
+When building a multi-day itinerary, an attraction whose themes include
+"day-trip" (Pobitora Wildlife Sanctuary, Mayong, Madan Kamdev Temple
+Complex, Chandubi Lake, Sualkuchi, the Pobitora-Mayong Circuit, North
+Guwahati Heritage Area, Garanga Beel, Chandrapur, Sonapur) is a
+half-or-full-day excursion OUTSIDE Guwahati city, not an in-city sight.
+Day 1 always stays anchored in the city core — Kamakhya Temple and a
+Brahmaputra river cruise are the two most iconic in-city must-dos and
+belong on Day 1 whenever they appear in the lists above, alongside any
+other non-day-trip attractions/temples/parks/restaurants that fit. Never
+open a multi-day itinerary with a day-trip-tagged attraction as its very
+first activity, and never let one crowd out that day's real in-city plan
+— it's a closing suggestion, not the day's main content, unless the
+visitor specifically asks to dedicate a whole day to it.
+
+For a 2-day itinerary specifically, present Day 2 as a genuine choice
+rather than piling an excursion note onto a fixed in-city plan: "Day 2:
+EITHER continue exploring the city — Srimanta Sankaradeva Kalakshetra and
+the Guwahati Ropeway (or whichever other in-city places fit) — OR, if you
+have a bit more time, spend the morning on the Pobitora-Mayong Circuit
+(~45-55 km from Guwahati/Dispur), pairing Pobitora's wildlife safari with
+Mayong's folklore, typically reached via Chandrapur on the way out of the
+city." Use the Pobitora-Mayong Circuit entry itself (not Pobitora and
+Mayong separately) for this option, since it already combines them —
+always state its own real distanceFromDispur figure directly in the
+reply text (never omit it), and use its highlight text so the visitor
+knows what makes the trip worthwhile; mention it's best done as a
+morning start (safari timing favors it). ALWAYS give both options — the
+in-city places AND the Pobitora-Mayong Circuit — a recommendation card
+with day: 2, even though only one is the "or" the visitor will actually
+pick, so a visitor who taps the Circuit card can see its details too. For
+itineraries of 3 or more days, once the city core is covered in the
+earlier day(s), a day-trip entry (the Circuit included) can become a
+genuine scheduled stop on its own day instead of an "either/or" choice.
+
 Whenever a single day's plan mentions two or more of these recommendation
 categories in a sequence — e.g. a temple in the morning, lunch at a
 restaurant, a film in the evening, then a bar or club at night — also set

@@ -2150,6 +2150,139 @@ nightlife venues stay as plain text for now.
       `/api/chat` and confirmed the real reply lists Cafe Maya 7th out of
       8, with genuine restaurants ranked ahead
 
+## Bug fix: "2-day trip" surfaced only far-flung excursions, no Guwahati city content
+- [x] Reported live: asking "plan me a 2-day trip" put Pobitora Wildlife
+      Sanctuary and Mayong (~45-55 km outside Guwahati) as Day 1, and
+      Madan Kamdev Temple Complex and Chandubi Lake (~40-70 km out) as
+      Day 2 — with Kamakhya Temple and the Brahmaputra river cruise
+      missing entirely
+- [x] Asked to research real 1/2/3-day Guwahati itineraries before
+      touching anything. Findings across multiple independent travel
+      guides (Wanderlog, ourguest.in, tataneu.com, roamaround.app,
+      Tripadvisor forums): a 1-day itinerary is always 100% in-city
+      (Kamakhya → Umananda → a museum/market → sunset cruise); a 2-day
+      itinerary keeps Day 1 entirely in-city, and if Day 2 adds an
+      excursion at all, Pobitora is the only one ever used, always on Day
+      2, never as the opener; multi-excursion days (Madan Kamdev,
+      Chandubi, Mayong together) only appear in 3+ day itineraries once
+      the city core is covered. What was reported inverted this pattern
+      entirely
+- [x] Root cause found in `attractions.js`: the regex tagging an entry
+      with the `day-trip` theme (`/day\s?trip|excursion|day\s?tour/`) had
+      no protection against matching the phrase "2-day trip" itself —
+      "day trip" is literally a substring of "2-day trip." That false
+      theme match made `getRelevantAttractions` take its narrowed-filter
+      branch instead of its own already-correct Tier-1 fallback, handing
+      Gemini ONLY the 10 day-trip-tagged places and hiding Kamakhya, the
+      river cruise, and every other in-city landmark entirely. Confirmed
+      via direct reproduction, and confirmed via grep that this collision
+      exists nowhere else in the project
+- [x] Fixed with a lookbehind guard so the day-trip theme doesn't fire
+      when "day" is immediately preceded by a duration number (digit or
+      spelled-out number + space/hyphen), while leaving genuine day-trip
+      requests ("day trip to Pobitora") untouched
+- [x] Added a second fix in `systemPrompt.js`: even with the regex fixed,
+      nothing told Gemini which day an in-city place vs. an excursion
+      belonged on. Added an explicit rule — Day 1 of a multi-day
+      itinerary always stays anchored in the city core (Kamakhya + a
+      river cruise are the two most iconic in-city must-dos), a
+      day-trip-tagged attraction should never open a multi-day itinerary,
+      and at most one such excursion should appear in a 2-day itinerary,
+      placed on a later day as a single add-on — matching the
+      research-confirmed real-world pattern
+- [x] Verified at the data layer: "plan me a 2-day trip," "plan a 2 day
+      trip" (space variant), and "plan a two-day trip" (spelled-out
+      variant) now all correctly return the Tier-1 fallback (Kamakhya
+      rank 1, Alfresco Grand river cruise rank 2, Umananda, Zoo, Pobitora,
+      Kalakshetra, Deepor Beel, Ropeway, Mayong) instead of only the 10
+      day-trip-tagged places
+- [x] Regression-checked at the data layer: "day trip to Pobitora,"
+      "excursion outside Guwahati," and a bare "2-day itinerary" (no
+      "trip" wording) all still behave exactly as before
+- [x] Verified live through the actual running dev server: asked "plan me
+      a 2-day trip" through `/api/chat` and got back exactly the
+      requested shape — Day 1: Maa Kamakhya Temple + Alfresco Grand sunset
+      cruise; Day 2: Srimanta Sankaradeva Kalakshetra + Guwahati Ropeway
+      (both in-city), with correct day/order tagging on every card
+- [x] Regression-checked live: "I want adventure sport in Guwahati" still
+      correctly routes to sports facilities (JR Karting, LAPX Go-Karting,
+      Assam Archery Club), not wildlife attractions; "day trip to
+      Pobitora" still correctly returns only Pobitora
+- [x] Follow-up request: in the live test above, Gemini chose not to
+      mention Pobitora at all on Day 2 — technically allowed by the new
+      rule ("at most one... never mandatory"), but too easy to omit
+      entirely. Asked to make it a guaranteed closing note instead: Day 2
+      should always suggest Pobitora with its real distance from Guwahati
+      and its wildlife draw, as an optional add-on rather than a
+      scheduled stop
+- [x] Strengthened the `systemPrompt.js` rule: for a 2-day itinerary
+      specifically, once Day 2's real in-city plan is set, always add one
+      brief closing note recommending Pobitora — naming its own
+      `distanceFromDispur` field (~45-50 km) and its own highlight text
+      (one-horned rhinos and safari) — with its own recommendation card
+      (day: 2) so the details display. 3+ day itineraries keep the
+      earlier, more flexible behavior (day-trips can become genuine
+      scheduled stops instead of just a note) since there's a whole extra
+      day to use them properly
+- [x] Verified live: "plan me a 2-day trip" now reliably closes Day 2
+      with "...If you have some extra time, consider an excursion to
+      Pobitora Wildlife Sanctuary, located about 45-50 km away, which is
+      famous for its one-horned rhinos and safari experiences," with a
+      matching Pobitora card at day: 2, order: 3 — Day 1 (Kamakhya +
+      Alfresco Grand cruise) and Day 2's real in-city plan (Kalakshetra +
+      Ropeway) unaffected
+
+## Follow-up: Day 2 reframed as an "either/or" choice, plus a Chandrapur data fix
+- [x] Asked to change the Day 2 note into a genuine either/or (in-city OR
+      an excursion), suggest the excursion as a morning activity (real
+      safari timing favors early morning, matching the earlier research),
+      and pair Mayong in since it's genuinely close to Pobitora — plus
+      research the real distance between Mayong and Chandrapur before
+      "clubbing them together"
+- [x] Researched via web search: Chandrapur is a real town ~15 km from
+      Guwahati, sitting on the same road towards Pobitora/Mayong (Uber
+      Intercity: Chandrapur→Mayong ~26 km; Wikipedia: Chandrapur sits
+      close to both Pobitora and Amchang wildlife sanctuaries). This
+      surfaced a real data bug: attractions.js's own separate Chandrapur
+      entry said "~30-35 km" from Guwahati — corrected to the verified
+      "~15 km" (confirmed with the user before touching already-verified
+      data, per this project's usual practice)
+- [x] Confirmed with the user to reuse the existing "Pobitora-Mayong
+      Circuit" entry (already combines Pobitora + Mayong, ~45-55 km)
+      rather than create a new combined entry — added a mention of
+      Chandrapur as the route waypoint to its highlight text
+- [x] Rewrote the `systemPrompt.js` Day 2 guidance from an "AND with an
+      optional closing note" into a genuine "EITHER continue in-city OR
+      spend the morning on the Pobitora-Mayong Circuit" choice, always
+      stating the Circuit's real distance in the reply text and always
+      giving it a recommendation card (not just whichever option Gemini
+      guesses the visitor prefers) so both alternatives show details
+- [x] Found and fixed a real bug while verifying live: the
+      Pobitora-Mayong Circuit is tier 2 in attractions.js, so it was
+      never actually included in `getRelevantAttractions`' generic
+      Tier-1 fallback (the branch "plan me a 2-day trip" uses) — Gemini
+      correctly followed the new instruction's wording but had no choice
+      except to substitute the standalone "Mayong" card, since the
+      Circuit entry wasn't in the list it was given. Fixed by explicitly
+      including the Circuit entry alongside the real Tier 1 places in
+      that fallback branch specifically (not by promoting its tier
+      everywhere, which would've changed how it ranks elsewhere)
+- [x] Verified live end-to-end after the fix: "plan me a 2-day trip" now
+      returns "Day 2: EITHER continue exploring the city — ... — OR, if
+      you have a bit more time, spend the morning on the Pobitora-Mayong
+      Circuit (~45-55 km from Guwahati/Dispur), pairing Pobitora's
+      wildlife safari with Mayong's folklore, typically reached via
+      Chandrapur on the way out of the city," with a matching
+      Pobitora-Mayong Circuit card (day: 2, ~45-55 km) alongside the
+      in-city cards
+- [x] Regression-checked live: "day trip to Pobitora" still returns only
+      Pobitora by name match (unaffected by the tier-1-fallback change,
+      since name matches take priority); "what should I do in Guwahati"
+      now includes the Circuit as an available card among the other 9
+      Tier-1 places, same low-risk pattern already used for every other
+      entry in that fallback (Gemini already only narrates a few of the
+      matched places in prose, not all of them — unchanged behavior)
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
