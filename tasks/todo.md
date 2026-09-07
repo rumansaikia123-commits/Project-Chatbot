@@ -2375,6 +2375,41 @@ nightlife venues stay as plain text for now.
       mentions Meghalaya trips) with zero chauffeur-cab noise, while
       still surfacing Shillong's honest no-train note in the reply
 
+## Follow-up: Cafe Maya and Kiranshree Sweets shouldn't match "Chinese" at all
+- [x] After the earlier ranking fix, both still appeared (near the
+      bottom) for "Chinese restaurant" — user decided, on reflection,
+      that their "Chinese" tag didn't really belong in the first place (a
+      cafe/mithai shop with a couple of Chinese-inspired items isn't the
+      same as an actual Chinese restaurant) and asked to remove the tag
+      from the data directly, not just rank around it
+- [x] Removed `'Chinese'` from both entries' `cuisines` arrays in
+      `restaurants.js` (Cafe Maya → `['Cafe', 'Asian', 'Mughlai']`;
+      Kiranshree Sweets → `['North Indian', 'South Indian', 'Mithai', 'Street Food']`).
+      No logic changes needed — the existing cuisine filter naturally
+      excludes them once the tag is gone
+- [x] Updated two stale comments that specifically quoted Kiranshree
+      Sweets' old cuisine list and described Cafe Maya as an intentional
+      "still shown, just demoted" case, so the code's own explanation
+      matches what it now actually does
+- [x] Verified at the data layer: "Chinese restaurant" now returns
+      exactly 6 real restaurants (Confucius, JholoeKiya, Red Hot Chilli
+      Pepper, Dine Way Platz, The Guwahati Address, Pirates of Grill) —
+      neither Cafe Maya nor Kiranshree Sweets appear at all
+- [x] Regression-checked: Cafe Maya still appears for "cafes in Christian
+      Basti," "Asian food," and "Mughlai food"; Kiranshree Sweets still
+      appears for "North Indian food," "street food," and "mithai" —
+      confirming only the Chinese tag was touched, nothing else about
+      either entry changed
+- [x] Regression-checked the general demotion mechanism still works:
+      "Continental restaurant" still ranks real restaurants first, with
+      genuinely Continental-tagged cafes (Lush - The Café, Bagan:
+      Poolside Café) correctly demoted to the bottom rather than
+      excluded — proving this fix only affected these two specific
+      entries, not the underlying ranking logic
+- [x] Verified live through the actual running dev server: "Chinese
+      restaurant in Guwahati?" now returns only the 6 real restaurants,
+      confirmed via `/api/chat`
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

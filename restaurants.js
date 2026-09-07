@@ -114,7 +114,7 @@ const restaurants = [
     address: 'GS Rd, near Lachit Nagar, Ulubari, Guwahati, Assam 781007' },
 
   // ----- Paltan Bazaar -----
-  { name: 'Kiranshree Sweets', area: 'Paltan Bazaar', cuisines: ['Chinese', 'North Indian', 'South Indian', 'Mithai', 'Street Food'],
+  { name: 'Kiranshree Sweets', area: 'Paltan Bazaar', cuisines: ['North Indian', 'South Indian', 'Mithai', 'Street Food'],
     costForTwo: 400, rating: 4.3,
     highlight: '30% OFF on delivery; popular for mithai and street food.',
     address: 'Paltan Bazaar, Near Railway Station, Guwahati, Assam' },
@@ -214,7 +214,7 @@ const restaurants = [
   { name: 'The HideOut Café', area: 'Borbari (VIP Road)', cuisines: ['Cafe', 'Tibetan'],
     costForTwo: 300, rating: 4.1,
     highlight: 'Garden-themed cafe, fresh multi-cuisine breakfast and momos.' },
-  { name: 'Cafe Maya', area: 'Christian Basti', cuisines: ['Cafe', 'Chinese', 'Asian', 'Mughlai'],
+  { name: 'Cafe Maya', area: 'Christian Basti', cuisines: ['Cafe', 'Asian', 'Mughlai'],
     costForTwo: 600, rating: 4.9,
     highlight: 'Casual dining mix of Chinese, Asian, and Mughlai finger foods.' },
   { name: 'The Atrangi House', area: 'Dighalipukhuri', cuisines: ['Cafe', 'Bakery', 'Continental'],
@@ -435,7 +435,7 @@ function getRelevantRestaurants(message) {
   // in a restaurant," got a cafe; a plain "lunch"/"dinner" ask, same
   // issue, confirmed separately). A restaurant that merely also serves
   // something shop-like among other cuisines (e.g. Kiranshree Sweets:
-  // Chinese/North Indian/.../Mithai) is untouched — only entries where
+  // North Indian/South Indian/.../Mithai) is untouched — only entries where
   // every listed cuisine is shop-like. An explicit cuisine mention always
   // wins regardless — "a nice cafe for lunch" still returns cafes, since
   // mentionedShopLikeCuisine is true in that case.
@@ -461,16 +461,24 @@ function getRelevantRestaurants(message) {
   // first, purely because it has the highest rating (4.9) among Chinese-
   // tagged places — even though a visitor who explicitly said "restaurant"
   // pictures a sit-down restaurant, not a cafe that happens to also serve
-  // Chinese food. Per explicit instruction, a shop-like place (cafe,
-  // mithai, bakery, street food) is NOT removed here — it's still a real,
-  // relevant match, the earlier "cuisine-specific matches should still
-  // win" decision stands — but when "restaurant"/"lunch"/"dinner" was
-  // explicitly said, it's ranked below every non-shop-like match, with
-  // rating only breaking ties within each of those two groups, not across
-  // them. A visitor who explicitly asks for a cafe/mithai/bakery/street
-  // food (mentionedShopLikeCuisine) is unaffected — this only demotes,
-  // never promotes, and only when a "proper meal" was asked for without
-  // asking for the shop-like thing directly.
+  // Chinese food. First fixed by demoting shop-like places below
+  // non-shop-like ones rather than excluding them, since a genuinely
+  // cuisine-matched cafe was judged still worth showing, just lower.
+  // Later revisited specifically for Cafe Maya and Kiranshree Sweets: on
+  // reflection their "Chinese" tag didn't really belong (a cafe/mithai
+  // shop with a couple of Chinese-inspired items isn't the same as an
+  // actual Chinese restaurant), so that tag was removed from both
+  // entries' data directly — they're now excluded from a "Chinese" match
+  // entirely, upstream of this ranking step, not just demoted by it. The
+  // demotion logic below still stands and still matters for other cafes
+  // with a genuinely-tagged real cuisine (e.g. Lush - The Café, Cafe
+  // Aera, 11th Avenue Cafe Bistro all carry Continental/Italian/Asian
+  // tags and should still rank below a real restaurant for those
+  // cuisines, not be excluded outright). A visitor who explicitly asks
+  // for a cafe/mithai/bakery/street food (mentionedShopLikeCuisine) is
+  // unaffected — this only demotes, never promotes, and only when a
+  // "proper meal" was asked for without asking for the shop-like thing
+  // directly.
   const isShopLike = (r) => r.cuisines.some((c) => SHOP_LIKE_CUISINES.has(c));
   const sorted = [...results].sort((a, b) => {
     if (wantsProperMeal && !mentionedShopLikeCuisine) {
