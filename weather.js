@@ -40,6 +40,25 @@ const WEATHER_CODE_DESCRIPTIONS = {
   95: 'Thunderstorm',
 };
 
+// Open-Meteo's free, no-signup tier is rate-limited by IP address (600
+// calls/minute, 5,000/hour, 10,000/day) — and that IP is shared across
+// every other free app on the same hosting platform, not just this one.
+// Confirmed live: real 429 "Too Many Requests" responses showed up on
+// Render within minutes of deploying, from only a couple of real visitor
+// questions — almost certainly someone else's traffic sharing the same
+// pool, not this app's own usage. A 429 is often transient (the shared
+// pool clears up), so a short retry — same shape as the Gemini 503
+// retry logic in server.js — gives it a real second and third chance
+// before giving up honestly.
+async function fetchWeatherWithRetry(url, maxRetries = 2, delayMs = 1500) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (res.status !== 429 || attempt === maxRetries) return res;
+    console.error(`Weather API rate-limited (attempt ${attempt + 1} of ${maxRetries + 1}) — retrying in ${delayMs}ms...`);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+}
+
 // Returns null when the message isn't a weather question at all (the
 // normal "empty" case, same as every other category). Returns
 // { error: true } specifically when it WAS a weather question but the
@@ -51,7 +70,7 @@ async function getRelevantWeather(message) {
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${GUWAHATI_LAT}&longitude=${GUWAHATI_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FKolkata`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const res = await fetchWeatherWithRetry(url);
     if (!res.ok) {
       console.error(`Weather fetch failed: HTTP ${res.status} ${res.statusText}`);
       return { error: true };

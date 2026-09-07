@@ -2453,6 +2453,47 @@ nightlife venues stay as plain text for now.
       `relevantWeather` stays `null` and adds no extra network call for
       anything that isn't a weather question
 
+## Follow-up: live weather was failing on Render with 429 errors
+- [x] User tested the deployed weather feature live and got "live weather
+      data isn't available right now" every time, even though it worked
+      correctly locally. My own catch block was silently swallowing the
+      real error, so there was nothing to diagnose yet
+- [x] Added logging (HTTP status on a bad response, the actual error
+      message on a network/timeout failure), pushed and deployed it,
+      then walked through Render's dashboard logs together (same
+      diagnostic pattern as the earlier Gemini 503 investigation) to
+      find the real cause: `Weather fetch failed: HTTP 429 Too Many
+      Requests`
+- [x] Researched Open-Meteo's actual rate limits: the free, no-signup
+      tier caps out at 600 calls/minute, 5,000/hour, 10,000/day — and
+      that limit is shared across every anonymous IP address, which on
+      Render's free tier means sharing with unrelated apps' traffic too.
+      Confirmed via Open-Meteo's own GitHub issues that unrelated
+      machines on shared IPs have hit this same 429 from very light
+      traffic of their own. Open-Meteo doesn't offer a free tier with a
+      private key — it's either the shared anonymous pool or a paid
+      plan with a dedicated key
+- [x] Discussed two honest options: add retry logic (quick, matches the
+      existing Gemini 503 pattern, but not guaranteed if the shared pool
+      stays saturated) vs. switch to a keyed provider like OpenWeatherMap
+      (needs a quick free signup, but the limit becomes private instead
+      of shared). Chose retry logic first
+- [x] Added `fetchWeatherWithRetry()` in `weather.js` — on a 429
+      specifically, retries up to 2 more times with a 1.5s pause between
+      attempts before giving up honestly, same shape as
+      `generateContentWithRetry()` in `server.js`. A fresh
+      `AbortSignal.timeout(8000)` is created per attempt (not shared
+      across retries) so an early attempt's timer can't prematurely
+      abort a later retry
+- [x] Verified the retry logic directly: simulated two 429 responses
+      followed by a real success — confirmed it retries twice, waits
+      between attempts, and returns real data on the 3rd try; separately
+      simulated a persistent 429 and confirmed it still fails honestly
+      (`{ error: true }`) after exhausting retries, with a clear log
+      trail rather than a silent failure
+- [x] Verified live through the actual running dev server: "Weather in
+      Guwahati?" still returns real, current conditions after this change
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
