@@ -18,6 +18,7 @@ const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require(
 const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues } = require('./sports');
 const { getRelevantTransportHubs, getRelevantCabServices, getRelevantSelfDriveServices, getRelevantDestinations } = require('./transport');
 const { getRelevantHospitals } = require('./hospitals');
+const { getRelevantWeather } = require('./weather');
 
 // "Structured output": instead of letting Gemini write its whole answer as
 // one block of prose (which the frontend then has to guess-format with
@@ -484,6 +485,10 @@ app.post('/api/chat', async (req, res) => {
     const relevantSelfDriveServices = getRelevantSelfDriveServices(allVisitorText);
     const relevantHospitals = getRelevantHospitals(allVisitorText);
     const relevantDestinations = getRelevantDestinations(allVisitorText);
+    // The one live, real-time data source in this app — everything
+    // else above is a hand-verified static file. Only actually fetched
+    // when the recent conversation looks like a weather question.
+    const relevantWeather = await getRelevantWeather(allVisitorText);
     // Temples' own area names (hill/locality) are folded into the text
     // restaurants.js sees, purely so its existing area-keyword matching can
     // pick up a genuine overlap (e.g. Umananda/Ugratara both say "Uzan
@@ -502,7 +507,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals, relevantDestinations),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals, relevantDestinations, relevantWeather),
         // Raised from 2048: a broad "market" question now returns all 16
         // real market entries with full text fields, which needs ~2,400
         // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON

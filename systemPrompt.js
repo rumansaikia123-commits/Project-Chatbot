@@ -237,7 +237,7 @@ function formatHospitalList(hospitals) {
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = []) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantWeather = null) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -299,6 +299,24 @@ standard off-topic decline above, even if cabServiceRecommendations
 below happens to be non-empty for it (these cab businesses aren't
 destination-restricted in the data, so don't mistake a non-empty list
 for permission to answer a distant-city question).
+
+If a visitor asks about the weather, temperature, rain, or forecast in
+Guwahati, "relevantWeather" below carries the real, live answer, fetched
+moments ago from a genuine weather API — this is the one piece of data
+in this entire app that isn't from a hand-verified file, so treat its
+honesty rules as absolute, not a suggestion:
+- If it has real values (temperatureC, condition, humidityPercent),
+  state them plainly and exactly as given — never round differently,
+  never add a detail (like "chance of rain later") that wasn't returned.
+- If it says { error: true }, the live fetch itself failed — say
+  plainly that live weather data isn't available right now, rather than
+  guessing a plausible-sounding temperature from general knowledge of
+  the season. This is the same never-invent rule as every other
+  category, applied to the one live data source instead of a static one.
+- If it's null, the message wasn't a weather question — say nothing
+  about weather at all, the same as any other category's empty case.
+
+${relevantWeather ? JSON.stringify(relevantWeather) : '(not a weather question — relevantWeather is null)'}
 
 Important distinction: a vague but genuinely Guwahati-related question is
 NOT off-topic. Something like "a park," "temples," or "shopping" with no

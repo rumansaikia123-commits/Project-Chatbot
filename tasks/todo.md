@@ -2410,6 +2410,49 @@ nightlife venues stay as plain text for now.
       restaurant in Guwahati?" now returns only the 6 real restaurants,
       confirmed via `/api/chat`
 
+## Add live weather answers via Open-Meteo
+- [x] Asked whether the chatbot could connect to Google Maps and a
+      weather API. Researched both honestly before proposing anything:
+      Google Maps Platform requires a credit card on file before it
+      issues an API key at all, even to stay in the free tier (Google
+      removed the old $200/month credit in March 2025); Open-Meteo needs
+      no signup, no key, and no card — free for up to 10,000 calls/day.
+      Decided to start with weather only, and specifically to answer
+      direct weather questions (not factor into itinerary advice yet)
+- [x] Added `weather.js` — this app's first genuinely LIVE data source.
+      Every other category is a hand-verified static file; this one
+      calls Open-Meteo's real API at the moment a visitor asks, using
+      Guwahati's real coordinates and a weather-code table hand-checked
+      against Open-Meteo's own documentation (never guessed)
+- [x] No new npm package needed — Node 20 (already required by this
+      project) has `fetch` built in
+- [x] Built with the same honesty discipline as every other category:
+      returns `null` when the message isn't about weather (same "empty
+      list" shape as everywhere else), and returns `{ error: true }`
+      specifically when the live fetch itself fails, so the system
+      prompt can tell Gemini to say so honestly instead of guessing a
+      plausible-sounding temperature
+- [x] Wired through `server.js` (one `await`, appended as
+      `buildSystemPrompt`'s final argument) and `systemPrompt.js` (one
+      new guardrail paragraph) — no `CHAT_RESPONSE_SCHEMA` change, since
+      this is one live fact presented in "reply" text, not a list of
+      matched entries needing its own card type
+- [x] Verified at the data layer: a weather question returns real,
+      live data (confirmed against Guwahati's actual conditions at test
+      time — 26.6°C, 95% humidity, thunderstorm); a non-weather message
+      correctly returns `null`
+- [x] Verified live through the actual running dev server: "what's the
+      weather like in Guwahati right now" returned the exact live
+      figures fetched moments earlier
+- [x] Verified the failure path end-to-end: temporarily pointed the
+      fetch at an invalid URL, confirmed the live reply said plainly
+      "live weather data isn't available right now" instead of
+      inventing a number, then reverted and re-verified the real fetch
+      still works correctly afterward
+- [x] Regression-checked: a temple question is completely unaffected —
+      `relevantWeather` stays `null` and adds no extra network call for
+      anything that isn't a weather question
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
