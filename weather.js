@@ -51,8 +51,11 @@ async function getRelevantWeather(message) {
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${GUWAHATI_LAT}&longitude=${GUWAHATI_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FKolkata`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return { error: true };
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      console.error(`Weather fetch failed: HTTP ${res.status} ${res.statusText}`);
+      return { error: true };
+    }
 
     const data = await res.json();
     return {
@@ -61,9 +64,13 @@ async function getRelevantWeather(message) {
       windKph: data.current.wind_speed_10m,
       condition: WEATHER_CODE_DESCRIPTIONS[data.current.weather_code] || 'Changeable conditions',
     };
-  } catch {
+  } catch (error) {
     // Network hiccup or timeout — never let a live-data failure crash
-    // or block the rest of the reply.
+    // or block the rest of the reply. Logged (not swallowed silently)
+    // so a real, persistent failure — as opposed to one slow request —
+    // is visible in the hosting platform's own logs, same reasoning as
+    // the Gemini 503 retry logic elsewhere in this project.
+    console.error('Weather fetch failed:', error.message || error);
     return { error: true };
   }
 }
