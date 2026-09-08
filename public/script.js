@@ -225,9 +225,14 @@ function addRecommendationCards(recommendations) {
       daysOff.textContent = rec.daysOff === 'None' ? 'open daily' : `closed ${rec.daysOff}`;
       meta.appendChild(daysOff);
     } else {
+      // Restaurants: `reviewCount` is newer (added 2026-09-08) and only
+      // set for some entries so far — folded into the same rating span
+      // rather than a third meta slot, same style as the sports-facility
+      // rating line elsewhere in this function.
       const rating = document.createElement('span');
       rating.className = 'rec-rating';
-      rating.textContent = rec.rating != null ? `★ ${rec.rating}` : 'unrated';
+      const ratingText = rec.rating != null ? `★ ${rec.rating}` : 'unrated';
+      rating.textContent = rec.reviewCount != null ? `${ratingText} (${rec.reviewCount} reviews)` : ratingText;
       meta.appendChild(rating);
 
       const cost = document.createElement('span');

@@ -48,8 +48,10 @@ const CHAT_RESPONSE_SCHEMA = {
           name: { type: Type.STRING },
           area: { type: Type.STRING },
           cuisines: { type: Type.ARRAY, items: { type: Type.STRING } },
-          rating: { type: Type.NUMBER },
+          rating: { type: Type.NUMBER, nullable: true },
           costForTwo: { type: Type.NUMBER, nullable: true },
+          phone: { type: Type.STRING, nullable: true },
+          reviewCount: { type: Type.NUMBER, nullable: true },
           highlight: { type: Type.STRING },
           // Nullable: only set for a multi-day itinerary (2+ days), so the
           // frontend can group cards by day. Null for a normal question.
@@ -62,7 +64,7 @@ const CHAT_RESPONSE_SCHEMA = {
           // an earlier one's.
           order: { type: Type.NUMBER, nullable: true },
         },
-        required: ['name', 'area', 'cuisines', 'rating', 'highlight', 'day', 'order'],
+        required: ['name', 'area', 'cuisines', 'highlight', 'day', 'order'],
       },
     },
     nightlifeRecommendations: {

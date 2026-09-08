@@ -170,6 +170,32 @@ test('REGRESSION (Kiranshree over-broad cuisine tags): sweets/street-food questi
   assert.deepEqual(getRelevantRestaurants('street food').map((r) => r.name), ['Kiranshree Sweets']);
 });
 
+test('REGRESSION (ABC/Bhangagarh area split): a bare "Bhangagarh" search finds Upsouth (not just the ABC-labeled entries)', () => {
+  const matches = getRelevantRestaurants('restaurants in bhangagarh').map((r) => r.name);
+  assert.ok(matches.includes('Upsouth'), 'Upsouth should match a bare Bhangagarh search');
+  assert.ok(matches.includes('The Barbeque Company'), 'existing ABC-labeled entries should still match too (no regression)');
+});
+
+test('specialty restaurants (2026-09-08): "rajasthani" finds both new entries', () => {
+  const matches = getRelevantRestaurants('rajasthani food').map((r) => r.name).sort();
+  assert.deepEqual(matches, ['Rajasthani DHANI', 'Rajasthani Dhaba Pure Veg'].sort());
+});
+
+test('specialty restaurants (2026-09-08): a lowConfidence-flagged entry still matches by cuisine', () => {
+  const matches = getRelevantRestaurants('south indian food').map((r) => r.name);
+  assert.ok(matches.includes('Shri Balaji South Indian Hot Chips'), 'a lowConfidence entry should still be returned by its cuisine, not excluded');
+});
+
+test('specialty restaurants (2026-09-08): the 2 enriched duplicate entries still match by cuisine, with real phone/reviewCount now attached', () => {
+  const aminia = restaurants.find((r) => r.name === 'Aminia Restaurant');
+  const honeys = restaurants.find((r) => r.name === "Honey's Buffet Biryani");
+  assert.equal(aminia.phone, '+91 70990 14300');
+  assert.equal(aminia.reviewCount, 3389);
+  assert.equal(honeys.phone, '+91 93655 62537');
+  assert.equal(honeys.reviewCount, 112);
+  assert.ok(getRelevantRestaurants('biryani').map((r) => r.name).includes('Aminia Restaurant'));
+});
+
 test('sweets.js: a bare "sweets" question returns all 20, sorted by curated reference rank (not star rating)', () => {
   const matches = getRelevantSweetShops('sweets');
   assert.equal(matches.length, 20);

@@ -2918,6 +2918,96 @@ nightlife venues stay as plain text for now.
       Sweets correctly excluded; "mithai and street food" still correctly
       returns it
 
+## Added 22 specialty restaurants: Biryani, South Indian, Bengali, Rajasthani (2026-09-08)
+- [x] User supplied a source-checked PDF of 22 specialty restaurants.
+      Found 2 genuine overlaps with existing entries (Aminia Restaurant,
+      Honey's Buffet Biryani — same rating/area, new source adds real
+      phone/reviewCount neither had before)
+- [x] Design reviewed before implementation (plan mode, then a real
+      back-and-forth after the first plan draft — user asked 4 pointed
+      questions before approving): confirmed these stay in the existing
+      restaurantRecommendations category (not a new one); confirmed
+      cuisine-keyword matching (biryani/south indian/etc.) already
+      applies once tagged; confirmed the 2 duplicate entries already
+      carry the Biryani tag from before, so no extra categorization work
+      needed; found and fixed a REAL, confirmed-live gap along the way —
+      a genuinely broad "restaurants in Guwahati" question showed cards
+      with zero offer to narrow by cuisine, despite the guardrail
+      already technically saying to
+- [x] Found and applied the exact same area-matching fix already
+      precedented once in this file (the Dighalipukhuri/Uzan Bazar
+      split): the merged `/\babc\b|bhangagarh/` → 'ABC, Bhangagarh' row
+      would have silently hidden the new Upsouth entry from a bare
+      "Bhangagarh" search, since Upsouth isn't at the ABC complex
+      specifically. Split into two separate rows, verified no regression
+      for existing ABC-labeled entries
+- [x] `restaurants.js`: enriched Aminia Restaurant and Honey's Buffet
+      Biryani with real phone/reviewCount; added 20 new entries (name/
+      area/phone/rating/reviewCount/cuisines/costForTwo:null/highlight),
+      with `lowConfidence: true` on exactly the 6 entries whose rating
+      the source itself flagged as uncertain (a delivery-app rating, or
+      literally "Current rating to verify" for Shri Balaji, which has no
+      numeric rating at all — first null-rating restaurant in the app);
+      added `Rajasthani` cuisine keyword; added 6 new AREA_KEYWORDS rows
+      (Basistha, Nabin Nagar, Lal Ganesh, Lokhra, Jorabat, Pator Kuchi);
+      applied the ABC/Bhangagarh split fix
+- [x] `server.js`: added `phone`/`reviewCount` (nullable) to
+      restaurantRecommendations' schema; made `rating` nullable for the
+      first time in this category (removed from required, matching the
+      existing convention nullable fields already follow)
+- [x] `systemPrompt.js`: `formatRestaurantList()` now shows phone/review
+      count and handles a null rating honestly ("rating not verified");
+      restaurant guardrail extended to cover copying phone/reviewCount
+      exactly; the broad-question paragraph rewritten so a genuinely
+      broad restaurant question always closes with a warm, concrete
+      cuisine-narrowing question (real examples named) instead of the
+      previous soft "if they'd like" that wasn't reliably happening —
+      scoped to stay inert for any question that already named a
+      cuisine/area/budget
+- [x] `public/script.js`: added review count to the generic restaurant
+      meta branch (phone needed no change — the existing generic
+      `if (rec.phone)` block already covers it)
+- [x] Added regression tests to `test.js` (47 total now): bare
+      "Bhangagarh" finds Upsouth (with the existing ABC-labeled entry
+      still matching too, confirming no regression); "Rajasthani" finds
+      both new entries; a lowConfidence entry still matches by cuisine;
+      the 2 enriched entries still match by name/cuisine with their new
+      phone/reviewCount confirmed
+- [x] Verified data sanity directly: count grew from 55 to 75 (exactly
+      20, not 22 — 2 were enrichments); Aminia/Honey's Buffet carry new
+      phone/reviewCount; exactly the 6 named entries carry
+      lowConfidence: true
+- [x] Verified matcher logic directly per the plan's specific cases —
+      all correct
+- [x] Verified live against a fresh server: Bengali food question showed
+      real phone numbers for every entry that has one, honest nulls for
+      the ones that don't; Shri Balaji South Indian Hot Chips (asked by
+      name) got an honestly-hedged reply ("review counts and specific
+      ratings are not formally verified... feedback tends to be
+      somewhat mixed") with rating/reviewCount/phone all null in the
+      structured data, zero fabrication
+- [x] **Found and fixed a real bug during this same verification pass**:
+      the first version of the broad-question closing-question wording
+      leaked into specific-cuisine questions too — "biryani places"
+      and "cheap cafes" both incorrectly got the "Chinese, South
+      Indian..." closing question on the first live test, even though
+      both already named a cuisine (and "cheap" a budget too).
+      Rewrote the guardrail with much stronger, explicitly-contrastive
+      language (mirroring the existing MANDATORY-style hard-rule
+      pattern already used elsewhere in this file for parks/
+      attractions) — restarted the server and retested: "cheap cafes"
+      fixed immediately (2/2); "biryani places" needed a second retest
+      round due to what turned out to be ordinary model-response
+      randomness (3/3 correct on retest, matching the same kind of
+      variance already documented elsewhere in this app, e.g. the
+      samosa 2/3 result) — 5/5 correct across both specific-question
+      cases after the fix, plus 3/3 correct on the genuinely-broad case
+      actually getting the question
+- [x] Full regression: `npm test` (47/47) plus a live "north indian
+      food" check confirming the Kiranshree Sweets fix from earlier this
+      session is
+      still intact
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

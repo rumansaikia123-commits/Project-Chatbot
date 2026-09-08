@@ -47,14 +47,21 @@ function formatVenueList(venues) {
 }
 
 // Turns a list of matched restaurants (from restaurants.js) into a text block for the prompt.
+// `rating` may now be null (one real entry, Shri Balaji South Indian Hot
+// Chips, has no rating at all in its source) — shown honestly rather than
+// assuming a number. `phone`/`reviewCount` are newer fields (added
+// 2026-09-08) and may be null for entries that don't have them yet.
 function formatRestaurantList(restaurants) {
   if (restaurants.length === 0) return '(none relevant to this question)';
   return restaurants
     .map((r) => {
+      const rating = r.rating != null ? `${r.rating}★` : 'rating not verified';
       const cost = r.costForTwo != null ? `~₹${r.costForTwo} for two` : 'price not listed';
+      const reviews = r.reviewCount != null ? ` (${r.reviewCount} reviews)` : '';
+      const phone = r.phone != null ? ` [Phone: ${r.phone}]` : '';
       const flag = r.lowConfidence ? ' — lower confidence, mention reviews are mixed' : '';
       const highlight = r.highlight ? `: ${r.highlight}` : '';
-      return `- ${r.name} (${r.area}) [${r.cuisines.join(', ')}] ${r.rating}★, ${cost}${flag}${highlight}`;
+      return `- ${r.name} (${r.area}) [${r.cuisines.join(', ')}] ${rating}${reviews}, ${cost}${phone}${flag}${highlight}`;
     })
     .join('\n');
 }
@@ -457,20 +464,43 @@ restaurant list further below contains:
 ${formatVenueList(relevantVenues)}
 
 If a visitor's food question is broad — e.g. "where should I eat," "top
-rated restaurants," "any good cafes" — with no cuisine, budget, or area
-mentioned, the list below is already our top-rated picks overall (or for
-whichever cuisine they mentioned, e.g. cafes). Go ahead and share a few of
-them as a strong starting point — don't withhold them waiting for more
-detail — and separately offer to narrow it down further by cuisine,
-budget, or area if they'd like.
+rated restaurants," "restaurants in Guwahati" — with no cuisine, budget,
+or area mentioned at all, the list below is already our top-rated picks
+overall (the same "show it directly, don't withhold" rule also applies
+when exactly one cuisine was named with nothing else — e.g. "any good
+cafes" — the list below is already the top-rated picks for that
+cuisine). Go ahead and share a few of them as a strong starting point —
+don't withhold them waiting for more detail.
+
+Separately, and independently of the paragraph above: whenever a
+restaurant question names absolutely NOTHING to go on — no cuisine, no
+area, no budget word (e.g. "restaurants in Guwahati," "where should I
+eat," "top rated restaurants") — this is a hard, standing rule, not a
+soft "if they'd like": close "reply" with one warm, concrete question
+inviting them to narrow it down by cuisine, naming a few real Guwahati
+examples (e.g. "Are you in the mood for something specific — Chinese,
+South Indian, Biryani, North Indian — or would you like me to keep it
+general?"). The moment ANYTHING has already been specified — a cuisine
+(even something as plain as "cafes" or "biryani" — do not reinterpret
+this as "so ask which style of biryani instead"), an area, or a budget
+word (e.g. "cheap cafes," "biryani places," "restaurants near Ganeshguri"
+all already count as specified) — this closing question must NOT
+appear at all, in any form, about anything. A specific request gets a
+plain, complete answer with no trailing question tacked on — that
+distinction matters more than the question itself, so when genuinely
+unsure whether a request counts as "specified," treat it as specified
+and skip the question.
 
 If the visitor is asking about restaurants, food, or dining, here are the
 ONLY restaurants you may put in "restaurantRecommendations" — do not
 include any other restaurant or eatery from your own general knowledge,
 even if you believe it's real, since we can only vouch for the accuracy of
 this specific, hand-verified list. For each one you include, copy its
-name, area, cuisines, rating, and cost exactly as given below — don't
-alter or round them. Show every restaurant below that genuinely fits what
+name, area, cuisines, rating, cost, phone, and review count exactly as
+given below — don't alter or round them. Rating, phone, and review count
+may each legitimately be null/not verified for a specific restaurant —
+say so honestly (e.g. "rating not verified" or no phone on file) rather
+than inventing one. Show every restaurant below that genuinely fits what
 they're asking for, up to a generous handful — aim for at least 5 or 6
 when that many real matches exist below, rather than arbitrarily stopping
 at 2 or 3. Only show fewer than that if there genuinely aren't more real
