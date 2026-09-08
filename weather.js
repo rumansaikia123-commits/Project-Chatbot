@@ -1,9 +1,10 @@
-// Guwahati's live weather, fetched from Open-Meteo — a free weather API
-// that needs no signup, no API key, and no credit card (unlike Google
-// Maps, which requires a card on file even for its free tier). This is
-// this app's first genuinely LIVE data source: every other category
-// (temples, restaurants, transport, etc.) is a hand-verified static
-// file; this one calls a real API at the moment a visitor asks.
+// Guwahati's live weather, fetched from OpenWeatherMap's free "classic"
+// Current Weather API — a private key tied to your own account (60
+// calls/minute, 1,000,000/month, no credit card), not a shared
+// anonymous IP pool. Switched from Open-Meteo (this app's original
+// choice) after confirming live on Render that Open-Meteo's shared-IP
+// free tier was getting rate-limited by other apps' traffic sharing
+// that same IP, not this app's own light usage.
 //
 // Same "only compute what's relevant" shape as every other category's
 // getRelevantX() function, except async, since it makes a real network
@@ -17,39 +18,15 @@ const GUWAHATI_LON = 91.7362;
 // keyword trigger.
 const WEATHER_TRIGGER = /\bweather\b|\btemperature\b|\braining\b|\brain\b|\bforecast\b|\bhow\s?hot\b|\bhow\s?cold\b|\bclimate\b/;
 
-// Hand-verified against Open-Meteo's own WMO weather-code documentation
-// (open-meteo.com/en/docs) — never guessed. A code not listed here
-// falls back to a generic, honest description rather than a wrong
-// specific one.
-const WEATHER_CODE_DESCRIPTIONS = {
-  0: 'Clear sky',
-  1: 'Mainly clear',
-  2: 'Partly cloudy',
-  3: 'Overcast',
-  45: 'Fog',
-  48: 'Icy fog',
-  51: 'Light drizzle',
-  53: 'Moderate drizzle',
-  55: 'Heavy drizzle',
-  61: 'Slight rain',
-  63: 'Moderate rain',
-  65: 'Heavy rain',
-  80: 'Rain showers',
-  81: 'Moderate showers',
-  82: 'Heavy showers',
-  95: 'Thunderstorm',
-};
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
-// Open-Meteo's free, no-signup tier is rate-limited by IP address (600
-// calls/minute, 5,000/hour, 10,000/day) — and that IP is shared across
-// every other free app on the same hosting platform, not just this one.
-// Confirmed live: real 429 "Too Many Requests" responses showed up on
-// Render within minutes of deploying, from only a couple of real visitor
-// questions — almost certainly someone else's traffic sharing the same
-// pool, not this app's own usage. A 429 is often transient (the shared
-// pool clears up), so a short retry — same shape as the Gemini 503
-// retry logic in server.js — gives it a real second and third chance
-// before giving up honestly.
+// With a private key at 60 calls/minute, this app should never
+// realistically hit a 429 — but the retry stays in as a cheap safety
+// net, same shape as the Gemini 503 retry logic in server.js. A fresh
+// AbortSignal.timeout per attempt, so an early attempt's timer can't
+// prematurely abort a later retry.
 async function fetchWeatherWithRetry(url, maxRetries = 2, delayMs = 1500) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
@@ -68,27 +45,42 @@ async function getRelevantWeather(message) {
   const text = message.toLowerCase();
   if (!WEATHER_TRIGGER.test(text)) return null;
 
+  const apiKey = process.env.OPENWEATHER_API_KEY;
+  if (!apiKey) {
+    console.error('Weather fetch failed: OPENWEATHER_API_KEY is not set');
+    return { error: true };
+  }
+
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${GUWAHATI_LAT}&longitude=${GUWAHATI_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FKolkata`;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${GUWAHATI_LAT}&lon=${GUWAHATI_LON}&appid=${apiKey}&units=metric`;
     const res = await fetchWeatherWithRetry(url);
     if (!res.ok) {
-      console.error(`Weather fetch failed: HTTP ${res.status} ${res.statusText}`);
+      if (res.status === 401) {
+        // The single most common reason for this specific code: a
+        // brand-new key that hasn't finished activating yet (can take
+        // up to ~2 hours after signup) — worth distinguishing from a
+        // genuinely wrong key so it's not mistaken for a typo.
+        console.error('Weather fetch failed: HTTP 401 Unauthorized — key may still be activating (can take up to ~2 hours after signup) or is incorrect');
+      } else {
+        console.error(`Weather fetch failed: HTTP ${res.status} ${res.statusText}`);
+      }
       return { error: true };
     }
 
     const data = await res.json();
     return {
-      temperatureC: data.current.temperature_2m,
-      humidityPercent: data.current.relative_humidity_2m,
-      windKph: data.current.wind_speed_10m,
-      condition: WEATHER_CODE_DESCRIPTIONS[data.current.weather_code] || 'Changeable conditions',
+      temperatureC: data.main.temp,
+      humidityPercent: data.main.humidity,
+      // OpenWeatherMap's "metric" units return wind speed in m/s, not
+      // kph — converted here (× 3.6) so the field name stays accurate.
+      windKph: Math.round(data.wind.speed * 3.6 * 10) / 10,
+      condition: capitalize(data.weather[0].description),
     };
   } catch (error) {
     // Network hiccup or timeout — never let a live-data failure crash
     // or block the rest of the reply. Logged (not swallowed silently)
-    // so a real, persistent failure — as opposed to one slow request —
-    // is visible in the hosting platform's own logs, same reasoning as
-    // the Gemini 503 retry logic elsewhere in this project.
+    // so a real, persistent failure is visible in the hosting
+    // platform's own logs.
     console.error('Weather fetch failed:', error.message || error);
     return { error: true };
   }

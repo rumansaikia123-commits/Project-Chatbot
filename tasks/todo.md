@@ -2494,6 +2494,42 @@ nightlife venues stay as plain text for now.
 - [x] Verified live through the actual running dev server: "Weather in
       Guwahati?" still returns real, current conditions after this change
 
+## Follow-up: retry wasn't enough, switched providers entirely
+- [x] Checked Render's logs again after the retry fix was deployed —
+      confirmed the retry logic itself worked exactly as designed (2
+      retries, 1.5s apart), but all 3 attempts got HTTP 429 both times a
+      real question was asked, seconds apart. This proved the shared
+      Render IP was persistently saturated, not just briefly spiking —
+      a short retry window can't outlast a persistent shared-pool problem
+- [x] Researched OpenWeatherMap's free tiers specifically: their
+      "classic" Current Weather API gives a private key at 60 calls/min,
+      1,000,000/month, no credit card — separate from their newer "One
+      Call API 3.0," which does require a card even for its free tier.
+      Confirmed the classic endpoint is exactly what this app needs
+      (current temperature/condition/humidity only)
+- [x] Walked through account creation together: signed up at
+      openweathermap.org (no card), got a private key from "My API
+      keys," added it to `.env` as `OPENWEATHER_API_KEY` (never pasted
+      into chat), and separately added the same key to Render's
+      Environment Variables
+- [x] Rewrote `weather.js` to call OpenWeatherMap's classic endpoint
+      instead of Open-Meteo — same `getRelevantWeather()` shape, same
+      null/`{error:true}` honesty contract, same retry-on-429 safety net
+      (now much less likely to ever trigger with a private per-key
+      limit). Handles OpenWeatherMap's own response shape: converts wind
+      speed from m/s to kph, and specifically distinguishes a 401
+      (likely just the ~2-hour key-activation delay OpenWeatherMap warns
+      about) from other failures in the log message, so a real problem
+      isn't mistaken for the expected activation wait
+- [x] First test correctly hit a 401 right after signup — confirmed
+      this was the expected activation delay, not a bug, and waited it
+      out rather than guessing at a fix
+- [x] Verified after activation: real live data returned locally
+      (32°C, 74% humidity, scattered clouds), and confirmed live through
+      the actual running dev server that "Weather in Guwahati?" returns
+      those exact figures
+- [x] Regression-checked: a temple question is completely unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
