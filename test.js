@@ -161,6 +161,15 @@ test('REGRESSION (samosa bug): restaurants.js Street Food cuisine recognizes sam
   assert.deepEqual(matches, ['Kiranshree Sweets']);
 });
 
+test('REGRESSION (Kiranshree over-broad cuisine tags): "north indian food" does NOT include the mithai shop', () => {
+  const matches = getRelevantRestaurants('north indian food').map((r) => r.name);
+  assert.ok(!matches.includes('Kiranshree Sweets'), 'Kiranshree Sweets should not appear for a plain North Indian food question');
+});
+test('REGRESSION (Kiranshree over-broad cuisine tags): sweets/street-food questions still find it', () => {
+  assert.deepEqual(getRelevantRestaurants('mithai shop').map((r) => r.name), ['Kiranshree Sweets']);
+  assert.deepEqual(getRelevantRestaurants('street food').map((r) => r.name), ['Kiranshree Sweets']);
+});
+
 test('sweets.js: a bare "sweets" question returns all 20, sorted by curated reference rank (not star rating)', () => {
   const matches = getRelevantSweetShops('sweets');
   assert.equal(matches.length, 20);

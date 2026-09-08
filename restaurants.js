@@ -114,7 +114,15 @@ const restaurants = [
     address: 'GS Rd, near Lachit Nagar, Ulubari, Guwahati, Assam 781007' },
 
   // ----- Paltan Bazaar -----
-  { name: 'Kiranshree Sweets', area: 'Paltan Bazaar', cuisines: ['North Indian', 'South Indian', 'Mithai', 'Street Food'],
+  // 'North Indian'/'South Indian' removed from cuisines (2026-09-08):
+  // real bug reported, a plain "north indian food" question was
+  // surfacing this mithai/street-food shop among actual sit-down North
+  // Indian restaurants. Same reasoning already applied to this exact
+  // entry's 'Chinese' tag above (see the note near TOP_N/wantsProperMeal)
+  // — a sweets shop that also sells a few north/south Indian snack items
+  // isn't the same as an actual North/South Indian restaurant. Now only
+  // matches a mithai/chaat/street-food-specific question, as intended.
+  { name: 'Kiranshree Sweets', area: 'Paltan Bazaar', cuisines: ['Mithai', 'Street Food'],
     costForTwo: 400, rating: 4.3,
     highlight: '30% OFF on delivery; popular for mithai and street food.',
     address: 'Paltan Bazaar, Near Railway Station, Guwahati, Assam' },

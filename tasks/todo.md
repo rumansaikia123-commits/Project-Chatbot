@@ -2882,6 +2882,42 @@ nightlife venues stay as plain text for now.
       was empty (fully back to committed state) and all 41 tests passed
       again
 
+## Quick fix: Kiranshree Sweets over-broad cuisine tags (2026-09-08)
+- [x] Live bug reported by the user: a plain "north indian food" question
+      returned Kiranshree Sweets among real sit-down North Indian
+      restaurants — a mithai/street-food shop, not the kind of place a
+      "north indian food" question means. User's instruction: it should
+      only show up for a sweets/chaat-type question
+- [x] Grepped for the same mistake elsewhere first (per established
+      practice) — confirmed Kiranshree Sweets was the ONLY restaurant in
+      the whole file carrying 'North Indian'/'South Indian' alongside a
+      shop-like cuisine, so this was an isolated one-entry fix, not a
+      wider pattern
+- [x] Recognized this is the exact same reasoning already applied to this
+      same entry's 'Chinese' tag in an earlier session (removed for the
+      same "a shop that sells a couple of X-inspired items isn't an
+      actual X restaurant" reasoning) — applied it symmetrically to
+      'North Indian' AND 'South Indian', not just North Indian, since the
+      user's stated intent ("only when asked about sweets/chaat etc") is
+      general, not north-Indian-specific
+- [x] Removed both tags from `restaurants.js`'s Kiranshree Sweets entry,
+      leaving `cuisines: ['Mithai', 'Street Food']` — matches what its
+      own highlight already says ("popular for mithai and street food")
+- [x] Flagged a real side effect to the user rather than letting them
+      discover it silently: Kiranshree Sweets was the ONLY 'South Indian'
+      -tagged restaurant in the whole dataset, so "south indian food"/
+      "dosa"/"idli" now correctly return zero verified matches instead of
+      one badly-fitting one — consistent with this app's "never show a
+      bad-fit recommendation just to have something to show" design, and
+      the existing empty-list guardrail already handles that honestly
+- [x] Added 2 regression tests to `test.js` (43 total now): "north indian
+      food" excludes Kiranshree Sweets; "mithai"/"street food" still
+      finds it. Full suite passes
+- [x] Verified live against a fresh server: "north indian food" now
+      returns exactly 10 real North Indian restaurants with Kiranshree
+      Sweets correctly excluded; "mithai and street food" still correctly
+      returns it
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
