@@ -16,7 +16,7 @@ const { getRelevantShops } = require('./shops');
 const { getRelevantAttractions } = require('./attractions');
 const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require('./accommodations');
 const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues } = require('./sports');
-const { getRelevantTransportHubs, getRelevantCabServices, getRelevantSelfDriveServices, getRelevantDestinations, getRelevantTwoWheelerRentals } = require('./transport');
+const { getRelevantTransportHubs, getRelevantCabServices, getRelevantSelfDriveServices, getRelevantDestinations, getRelevantTwoWheelerRentals, getRelevantRvRentals } = require('./transport');
 const { getRelevantHospitals } = require('./hospitals');
 const { getRelevantSweetShops } = require('./sweets');
 const { getRelevantWeather } = require('./weather');
@@ -395,8 +395,29 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'phone', 'highlight'],
       },
     },
+    rvRentalRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'RV / caravan / motorhome rental businesses being recommended in this reply, for multi-day Northeast road-trip or overlanding questions. Empty if this reply is not recommending one.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          phone: { type: Type.STRING },
+          rating: { type: Type.NUMBER, nullable: true },
+          reviewCount: { type: Type.NUMBER, nullable: true },
+          coverage: { type: Type.STRING, nullable: true },
+          driverOrSelfDrive: { type: Type.STRING },
+          capacity: { type: Type.STRING },
+          facilities: { type: Type.STRING },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'phone', 'driverOrSelfDrive', 'capacity', 'facilities', 'highlight'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations', 'transportHubRecommendations', 'cabServiceRecommendations', 'selfDriveRecommendations', 'hospitalRecommendations', 'sweetShopRecommendations', 'twoWheelerRentalRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations', 'transportHubRecommendations', 'cabServiceRecommendations', 'selfDriveRecommendations', 'hospitalRecommendations', 'sweetShopRecommendations', 'twoWheelerRentalRecommendations', 'rvRentalRecommendations'],
 };
 
 const app = express();
@@ -522,6 +543,7 @@ app.post('/api/chat', async (req, res) => {
     const relevantHospitals = getRelevantHospitals(allVisitorText);
     const relevantSweetShops = getRelevantSweetShops(allVisitorText);
     const relevantTwoWheelerRentals = getRelevantTwoWheelerRentals(allVisitorText);
+    const relevantRvRentals = getRelevantRvRentals(allVisitorText);
     const relevantDestinations = getRelevantDestinations(allVisitorText);
     // The one live, real-time data source in this app — everything
     // else above is a hand-verified static file. Only actually fetched
@@ -545,7 +567,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals, relevantDestinations, relevantSweetShops, relevantTwoWheelerRentals, relevantWeather),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals, relevantDestinations, relevantSweetShops, relevantTwoWheelerRentals, relevantRvRentals, relevantWeather),
         // Raised from 2048: a broad "market" question now returns all 16
         // real market entries with full text fields, which needs ~2,400
         // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON
@@ -580,7 +602,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [], transportHubRecommendations: [], cabServiceRecommendations: [], selfDriveRecommendations: [], hospitalRecommendations: [], sweetShopRecommendations: [], twoWheelerRentalRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [], transportHubRecommendations: [], cabServiceRecommendations: [], selfDriveRecommendations: [], hospitalRecommendations: [], sweetShopRecommendations: [], twoWheelerRentalRecommendations: [], rvRentalRecommendations: [] };
     }
 
     res.json({
@@ -604,6 +626,7 @@ app.post('/api/chat', async (req, res) => {
       hospitalRecommendations: parsed.hospitalRecommendations,
       sweetShopRecommendations: parsed.sweetShopRecommendations,
       twoWheelerRentalRecommendations: parsed.twoWheelerRentalRecommendations,
+      rvRentalRecommendations: parsed.rvRentalRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

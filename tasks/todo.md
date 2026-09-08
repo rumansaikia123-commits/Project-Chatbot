@@ -2710,6 +2710,97 @@ nightlife venues stay as plain text for now.
       most likely a misread of small screenshot text rather than a real
       bug, but noted here rather than silently dismissed
 
+## Added a twentieth category: RV / caravan / motorhome rentals (2026-09-08)
+- [x] User supplied one fully-specified business (Bharat Caravans -
+      NorthEast: type, phone, rating, coverage, driver/self-drive,
+      capacity, facilities, use) and one partial (Camping Co.: name,
+      area, rating, phone only), asking for research to fill in the rest
+- [x] Researched Camping Co. via web search/fetch (read-only, during plan
+      mode): real fleet details found — self-drive Thar/Xenon rooftop-tent
+      overlanders PLUS a separate driver-provided luxury caravan (up to
+      6, bathroom/fridge/microwave/cabinets); partners with campsites for
+      overnight stops; coverage described only generally as "Northeast by
+      road," no itemized state list like Bharat Caravans gave directly.
+      Primary source: responsibletourismindia.com/stay/camping-co/309
+      (fetched directly); camping-co.com confirmed indirectly via search
+      snippet only (direct fetch failed — DNS error). A real price range
+      (₹2,999–₹91,999/night) was found but deliberately not used — see
+      below
+- [x] Design reviewed before implementation (plan mode, three direct
+      questions): user chose to keep this category price-free, matching
+      every other category's "no live pricing data" rule, despite a real
+      range being found; chose to keep Camping Co. as ONE entry with an
+      honest "both available" driver/self-drive description rather than
+      splitting it into two rows; chose new structured schema fields +
+      card rows for coverage/driver-or-self-drive/capacity/facilities
+      (matching how the user organized the data) over folding everything
+      into one highlight sentence
+- [x] `transport.js`: added `rvRentals` array (2 entries) with the
+      richest field shape of any category yet — name/area/phone/rating/
+      reviewCount/coverage/driverOrSelfDrive/capacity/facilities/
+      highlight. Bharat Caravans' fields are as directly given by the
+      user; Camping Co.'s descriptive fields are flagged in a code
+      comment as research-sourced (not directly Google-verified like
+      every other category's user-supplied numbers), with the honesty
+      hedge carried into the text itself ("not itemized/stated in
+      available public listings") — same tiering already used for
+      hospitals' "24x7 listed (not independently verified)". Added
+      `RV_NAME_KEYWORDS`, `RV_TRIGGER` (rv/caravan/motorhome/camper van/
+      recreational vehicle, plurals checked), area-fragment matching
+      (own local copy of the twoWheelerRentals split-on-"/"-and-","
+      approach), `getRelevantRvRentals()` mirroring
+      `getRelevantTwoWheelerRentals`'s structure
+- [x] `server.js`: imported `getRelevantRvRentals`, computed
+      `relevantRvRentals`, added `rvRentalRecommendations` to
+      `CHAT_RESPONSE_SCHEMA` with the full field shape (coverage
+      nullable, everything else required), added it to the schema's
+      top-level `required` array, threaded it into `buildSystemPrompt`
+      as the new final argument (before `relevantWeather`), added it to
+      both the JSON-parse-failure fallback and the real `res.json(...)`
+- [x] `systemPrompt.js`: added the new parameter; built a new
+      `formatRvRentalList()` (too rich a shape for the shared
+      `formatContactList()`), multi-line per entry like
+      `formatHospitalList`/`formatTempleList`; added a new guardrail
+      paragraph requiring the Camping Co. honesty distinction be passed
+      along if asked something very specific about its fleet, forbidding
+      any stated/implied current price or live availability, and the
+      standard empty-list handling; added `rvRentalRecommendations` to
+      the existing day/order-exempt category list
+- [x] `public/script.js`: added a new `'capacity' in rec` discrimination
+      branch (checked before the pre-existing `'reviewCount' in rec`
+      branch, since these entries have both) showing rating+review count
+      and driver/self-drive info in the meta row, plus a new conditional
+      block (same pattern as the existing phone row) adding Capacity/
+      Facilities/Coverage as extra full-width lines; added
+      `data.rvRentalRecommendations` to the `categories` array in
+      `renderRecommendations()`
+- [x] Verified data sanity directly: 2 entries, exact field values match
+      the plan (confirmed via direct JSON dump)
+- [x] Verified matcher logic directly: bare "RV rental"/"caravan"/
+      "motorhome"/"camper van" → both entries sorted by rating (Camping
+      Co. 4.4 first, Bharat Caravans 3.7 second); a named match
+      ("Bharat Caravans", "Camping Co") narrows to just that one; "caravan
+      rental in Bhangagarh" → just Bharat Caravans; an unrelated query →
+      none
+- [x] Verified live against a fresh server process: "I want to rent a
+      caravan for a multi-day Northeast road trip" returned both real
+      entries with full structured data and a reply that correctly
+      explained Camping Co.'s details come from "available public
+      listings rather than independently confirmed data" (the exact
+      honesty distinction this session was built to require) and never
+      stated a price anywhere; "Tell me about Bharat Caravans" correctly
+      narrowed to just that one entry; regression pass on cab services
+      ("cab to Shillong") and an unrelated temple question both returned
+      zero RV-rental matches, no false-positive category bleed
+- [x] Verified visually with a real headless-browser screenshot
+      (Playwright, same scratch install): both cards render correctly —
+      rating+reviews, driver/self-drive info, phone, capacity,
+      facilities, coverage, area, and italic highlight all show real
+      text with no broken/undefined values; Camping Co.'s "Both
+      available" text and Bharat Caravans' "Driver provided — no
+      self-drive option" text both display correctly and distinctly;
+      zero browser console errors
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

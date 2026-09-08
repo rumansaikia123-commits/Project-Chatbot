@@ -130,6 +130,22 @@ function addRecommendationCards(recommendations) {
       distance.className = 'rec-cost';
       distance.textContent = `${rec.distanceFromDispur} from Dispur`;
       meta.appendChild(distance);
+    } else if ('capacity' in rec) {
+      // RV/caravan/motorhome rentals: the richest shape of any category,
+      // so checked before the plainer 'reviewCount' branch below (these
+      // entries have both). Rating + review count share one slot, driver/
+      // self-drive info takes the other — capacity/facilities/coverage
+      // get their own extra lines further down, same pattern as phone.
+      const rating = document.createElement('span');
+      rating.className = 'rec-rating';
+      const ratingText = rec.rating != null ? `★ ${rec.rating}` : 'rating not verified';
+      rating.textContent = rec.reviewCount != null ? `${ratingText} (${rec.reviewCount} reviews)` : ratingText;
+      meta.appendChild(rating);
+
+      const driverInfo = document.createElement('span');
+      driverInfo.className = 'rec-cost';
+      driverInfo.textContent = rec.driverOrSelfDrive;
+      meta.appendChild(driverInfo);
     } else if ('reviewCount' in rec) {
       // Homestays/Airbnb and gaming venues: no stars, just a rating + how
       // many reviews it's based on. Homestays always have a real number
@@ -232,6 +248,28 @@ function addRecommendationCards(recommendations) {
       card.appendChild(phone);
     }
 
+    // RV/caravan/motorhome rentals carry three more real facts with no
+    // natural home in the two-slot meta row above — same "own line"
+    // treatment as phone.
+    if ('capacity' in rec) {
+      const capacity = document.createElement('div');
+      capacity.className = 'rec-meta';
+      capacity.textContent = `Capacity: ${rec.capacity}`;
+      card.appendChild(capacity);
+
+      const facilities = document.createElement('div');
+      facilities.className = 'rec-meta';
+      facilities.textContent = `Facilities: ${rec.facilities}`;
+      card.appendChild(facilities);
+
+      if (rec.coverage) {
+        const coverage = document.createElement('div');
+        coverage.className = 'rec-meta';
+        coverage.textContent = `Coverage: ${rec.coverage}`;
+        card.appendChild(coverage);
+      }
+    }
+
     const area = document.createElement('div');
     area.className = 'rec-area';
     area.textContent = rec.area;
@@ -304,6 +342,7 @@ function renderRecommendations(data) {
     data.cabServiceRecommendations,
     data.selfDriveRecommendations,
     data.twoWheelerRentalRecommendations,
+    data.rvRentalRecommendations,
     data.hospitalRecommendations,
   ];
   const all = categories.flat();

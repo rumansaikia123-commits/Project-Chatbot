@@ -241,10 +241,36 @@ function formatHospitalList(hospitals) {
     .join('\n\n');
 }
 
+// Turns a list of matched RV/caravan/motorhome rentals (from
+// transport.js) into a text block for the prompt. The richest shape of
+// any category — coverage/driverOrSelfDrive/capacity/facilities are all
+// shown as their own labeled lines, mirroring formatHospitalList's
+// multi-line style above, since a single-line summary couldn't hold
+// this many genuinely distinct facts cleanly. No price line — this app
+// has no live pricing data for these businesses, same rule as every
+// other rental category.
+function formatRvRentalList(rentals) {
+  if (rentals.length === 0) return '(none relevant to this question)';
+  return rentals
+    .map((r) => {
+      const rating = r.rating != null ? `${r.rating}/5${r.reviewCount != null ? ` (${r.reviewCount} reviews)` : ''}` : 'rating not verified';
+      const coverage = r.coverage != null ? r.coverage : 'coverage area not stated in source';
+      return (
+        `- ${r.name} (${r.area}) [${rating}] [Phone: ${r.phone}]\n` +
+        `  Driver/self-drive: ${r.driverOrSelfDrive}\n` +
+        `  Capacity: ${r.capacity}\n` +
+        `  Facilities: ${r.facilities}\n` +
+        `  Coverage: ${coverage}\n` +
+        `  Highlight: ${r.highlight}`
+      );
+    })
+    .join('\n\n');
+}
+
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantSweetShops = [], relevantTwoWheelerRentals = [], relevantWeather = null) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantSweetShops = [], relevantTwoWheelerRentals = [], relevantRvRentals = [], relevantWeather = null) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -924,14 +950,40 @@ stay helpful" reasoning as every other category above:
 
 ${formatContactList(relevantTwoWheelerRentals)}
 
+If a visitor asks about renting an RV, caravan, or motorhome — typically
+for a multi-day Northeast road trip or overlanding plan — here are the
+ONLY businesses you may put in "rvRentalRecommendations" — do not
+include any other RV/caravan rental from your own general knowledge,
+even if you believe it's real, since we can only vouch for the accuracy
+of this specific, hand-verified list. For each one you include, copy its
+name, area, phone, driver/self-drive info, capacity, facilities,
+coverage, and highlight exactly as given below — coverage may be null,
+say so honestly rather than inventing a state list. Some details for
+Camping Co. specifically are noted below as coming from public listings
+rather than confirmed Google Business data (unlike every other business
+in this app, including Bharat Caravans here) — if a visitor asks
+something very specific about Camping Co.'s fleet or facilities that
+goes beyond what's given, pass along that it's from public listings
+rather than independently confirmed, the same honesty this app already
+requires for a hospital's unverified emergency status. Never state or
+imply a current price or that a specific vehicle is available right now
+— this app has no live booking or pricing data; suggest the visitor
+confirm current rates and availability directly with the business. If
+THIS RV RENTAL list below is empty, leave "rvRentalRecommendations"
+empty — same "could just be no match, stay helpful" reasoning as every
+other category above:
+
+${formatRvRentalList(relevantRvRentals)}
+
 None of hotelRecommendations, resortRecommendations,
 homestayRecommendations, transportHubRecommendations,
 cabServiceRecommendations, selfDriveRecommendations,
-hospitalRecommendations, sweetShopRecommendations, or
-twoWheelerRentalRecommendations use "day" or "order" — unlike every
-other recommendation category, a place to stay, a way of travelling, a
-hospital, a sweet shop, or a rental business isn't a sequenced daily
-activity, so never try to tag one with a day or position in a plan.
+hospitalRecommendations, sweetShopRecommendations,
+twoWheelerRentalRecommendations, or rvRentalRecommendations use "day" or
+"order" — unlike every other recommendation category, a place to stay, a
+way of travelling, a hospital, a sweet shop, or a rental business isn't a
+sequenced daily activity, so never try to tag one with a day or position
+in a plan.
 
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"

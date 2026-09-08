@@ -261,6 +261,40 @@ const twoWheelerRentals = [
     highlight: 'Rents motorcycles and scooters.' },
 ];
 
+// RV / caravan / motorhome rentals — for multi-day Northeast road trips,
+// not in-city transport. A much richer shape than every category above:
+// coverage/driverOrSelfDrive/capacity/facilities are real, separately
+// meaningful facts here, not just a name/area/phone/rating/highlight.
+//
+// Bharat Caravans' fields below are exactly as given by the user
+// (same confidence as every other category's user-supplied numbers).
+// Camping Co.'s descriptive fields (coverage/driverOrSelfDrive/capacity/
+// facilities) are NOT from the user or from Google Business data — they
+// were researched from public listings (primarily
+// responsibletourismindia.com/stay/camping-co/309) since the user only
+// gave name/area/rating/phone and asked for the rest to be looked up.
+// That's a real difference in confidence, so it's hedged directly in the
+// text itself ("not itemized/stated in available public listings"),
+// the same honesty-tiering this app already applies to hospitals' "24x7
+// listed (not independently verified)" vs "24x7 (confirmed)". No price
+// field on either entry — this app has no live pricing data, same rule
+// as every other rental category, even though a real price range
+// (₹2,999–₹91,999/night) was found for Camping Co. during research.
+const rvRentals = [
+  { name: 'Camping Co.', area: 'Nabajyoti Nagar / Batahguli', phone: '+91 69133 32761', rating: 4.4, reviewCount: 184,
+    coverage: 'Northeast India by road (exact states not itemized in available public listings)',
+    driverOrSelfDrive: 'Both available — self-drive Thar/Xenon rooftop-tent overlanders, or a driver-provided caravan',
+    capacity: 'Caravan seats up to 6; overlander capacity not stated in available public listings',
+    facilities: 'Caravan: bathroom, fridge, microwave, cabinets. Overlanders: rooftop tent (hard or soft-shell). Partner campsites offer kitchen, toilet, and charging access.',
+    highlight: 'A dedicated Northeast overlanding outfitter that partners with campsites along the route, so there\'s always somewhere real to park for the night.' },
+  { name: 'Bharat Caravans - NorthEast', area: 'Dispur / Bhangagarh', phone: '+91 90383 89666', rating: 3.7, reviewCount: 11,
+    coverage: 'Assam, Meghalaya, Arunachal Pradesh and Nagaland',
+    driverOrSelfDrive: 'Driver provided — no self-drive option',
+    capacity: 'Up to 6 adults + 2 children',
+    facilities: 'Toilet and shower',
+    highlight: 'Built for multi-day road trips and Northeast touring, with a dedicated driver for the whole journey.' },
+];
+
 const HUB_NAME_KEYWORDS = [
   { pattern: /airport|lgbi|bordoloi/, name: 'Lokpriya Gopinath Bordoloi International Airport' },
   { pattern: /kamakhya.{0,15}(railway|junction|station)/, name: 'Kamakhya Junction Railway Station (KYQ)' },
@@ -333,6 +367,11 @@ const TWOWHEELER_NAME_KEYWORDS = [
   { pattern: /ahija/, name: 'Ahija Self Drive' },
 ];
 
+const RV_NAME_KEYWORDS = [
+  { pattern: /camping\s?co\b/, name: 'Camping Co.' },
+  { pattern: /bharat\s?caravans?/, name: 'Bharat Caravans - NorthEast' },
+];
+
 const DESTINATION_NAME_KEYWORDS = [
   { pattern: /\bjorhat\b/, name: 'Jorhat' },
   { pattern: /\bdibrugarh\b/, name: 'Dibrugarh' },
@@ -371,6 +410,10 @@ const CAB_TRIGGER =
 // where a trailing \b silently failed to match a natural plural.
 const TWOWHEELER_TRIGGER =
   /\bbikes?\b|\bscooters?\b|\bscooty\b|two[\s-]?wheelers?\b|\bmotorcycles?\b|\bmopeds?\b/;
+
+// The user's own "RV / Caravan / Motorhome" search terms, mapped
+// directly to a trigger regex.
+const RV_TRIGGER = /\brvs?\b|\bcaravans?\b|\bmotorhomes?\b|\bcamper\s?vans?\b|recreational\s?vehicles?/;
 
 // Real bug found live: "How to go to Shillong from Guwahati?" (and the
 // same phrasing for Jorhat, Nalbari, Itanagar, Cherrapunjee, Dawki,
@@ -508,15 +551,50 @@ function getRelevantTwoWheelerRentals(message) {
   return [...results].sort((a, b) => b.rating - a.rating);
 }
 
+// Same delimiter-mixing situation as two-wheeler rentals above, kept as
+// its own local copy rather than shared (matches this file's existing
+// style — each section owns its own small helpers).
+function rvAreaFragments(rental) {
+  return rental.area.split(/\/|,/).map((fragment) => fragment.trim().toLowerCase());
+}
+
+// Same shape as getRelevantTwoWheelerRentals: named match narrows, else
+// RV_TRIGGER gates the category, an area mention narrows further, sorted
+// by rating descending.
+function getRelevantRvRentals(message) {
+  const text = message.toLowerCase();
+  const matchedNames = matchKeywords(text, RV_NAME_KEYWORDS, 'name');
+  if (matchedNames.length > 0) {
+    return rvRentals.filter((r) => matchedNames.includes(r.name));
+  }
+
+  if (!RV_TRIGGER.test(text)) return [];
+
+  const allFragments = new Set();
+  for (const rental of rvRentals) {
+    for (const fragment of rvAreaFragments(rental)) allFragments.add(fragment);
+  }
+  const mentionedFragments = [...allFragments].filter((fragment) => text.includes(fragment));
+
+  let results = rvRentals;
+  if (mentionedFragments.length > 0) {
+    results = results.filter((r) => rvAreaFragments(r).some((fragment) => mentionedFragments.includes(fragment)));
+  }
+
+  return [...results].sort((a, b) => b.rating - a.rating);
+}
+
 module.exports = {
   transportHubs,
   cabServices,
   selfDriveServices,
   destinations,
   twoWheelerRentals,
+  rvRentals,
   getRelevantTransportHubs,
   getRelevantCabServices,
   getRelevantSelfDriveServices,
   getRelevantDestinations,
   getRelevantTwoWheelerRentals,
+  getRelevantRvRentals,
 };
