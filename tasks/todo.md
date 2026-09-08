@@ -2839,6 +2839,49 @@ nightlife venues stay as plain text for now.
       this app (the reason temperature is set to 0.2), not a defect in
       this fix. Regression-checked "chaats near Ganeshguri" — unaffected
 
+## Added an automated test suite for matcher functions (2026-09-08)
+- [x] Discussed with the user: every regex/keyword bug this project has
+      hit (cafe/cafes, mithai, samosa) has only ever been caught by
+      manually starting a live server, curling it, and waiting on a real
+      Gemini response — expensive in both time and tokens for something
+      fully deterministic (`getRelevantX()` takes a string, returns an
+      array, no randomness, no network call). Agreed to build a test
+      suite (over a custom skill) first, since it's the more foundational
+      fix for the actual repeated cost
+- [x] Scoped deliberately: covers the matcher functions only, not
+      whether Gemini's final reply actually uses the data correctly —
+      that has real model randomness (proven this same session: the
+      samosa fix was correct 2 of 3 live replays) and can't be tested
+      without mocking a live API call. Live/manual verification still
+      matters for anything touching Gemini's actual behavior; this
+      suite is additive, not a replacement
+- [x] Added `test.js` (root level, matching this project's flat-file
+      style) using Node's own built-in test runner (`node:test` +
+      `node:assert/strict`) — zero new dependencies, nothing new to
+      install, since `package.json` already requires Node ≥20 and
+      Node has shipped this since v18
+- [x] Changed `package.json`'s `"test"` script from the placeholder
+      `"echo ... && exit 1"` to `"node --test"`
+- [x] Baseline smoke test for every category's matcher (bare trigger →
+      non-empty, unrelated message → empty), plus real regression tests
+      for the categories with actual documented bug history: restaurants
+      (plural cuisines, the samosa fix), venues (plural nightlife words),
+      sweets (samosa, chaats-only filter, combined chaats+area
+      AND-filter, multi-locality splitting, named-shop disambiguation,
+      reference-rank sort order), transport (two-wheeler mixed "/"/","
+      area delimiters, RV rental matching, Ahija Self Drive rating
+      staying in sync between selfDriveServices and twoWheelerRentals).
+      41 tests total, all real values confirmed against the live code
+      first (never guessed) before being written as assertions
+- [x] Verified `npm test` runs the whole suite in ~0.6-0.7 seconds with
+      zero network calls — 41/41 passing
+- [x] Verified the tests are real, not vacuous: temporarily removed
+      samosa from `SWEETSHOP_TRIGGER`, ran `npm test`, confirmed exactly
+      the expected test failed with a clear assertion error and nothing
+      else broke; restored the file and confirmed `git diff sweets.js`
+      was empty (fully back to committed state) and all 41 tests passed
+      again
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
