@@ -187,15 +187,22 @@ function formatTransportHubList(hubs) {
   return hubs.map((h) => `- ${h.name} (${h.area}) [${h.type}]\n  Highlight: ${h.highlight}`).join('\n\n');
 }
 
-// Turns a list of matched cab-hire or self-drive businesses (from
-// transport.js) into a text block for the prompt. Shared by both, since
-// they have the same shape (name, area, phone, rating, reviewCount).
+// Turns a list of matched cab-hire, self-drive, or sweet-shop businesses
+// (from transport.js / sweets.js) into a text block for the prompt.
+// Shared across all three, since they have the same core shape (name,
+// area, phone, rating, reviewCount). `phone` may be null (two real sweet
+// shops have no listed number) — shown honestly rather than printing a
+// literal "null". `chaats` only exists on sweet shops, so it's shown
+// only `'chaats' in b` — cab/self-drive businesses render exactly as
+// before, unaffected.
 function formatContactList(businesses) {
   if (businesses.length === 0) return '(none relevant to this question)';
   return businesses
     .map((b) => {
       const rating = b.rating != null ? `${b.rating}/5${b.reviewCount != null ? ` (${b.reviewCount} reviews)` : ''}` : 'rating not verified';
-      return `- ${b.name} (${b.area}) [${rating}] [Phone: ${b.phone}]\n  Highlight: ${b.highlight}`;
+      const phone = b.phone != null ? b.phone : 'not listed';
+      const chaats = 'chaats' in b ? `, chaats: ${b.chaats ? 'yes' : 'no'}` : '';
+      return `- ${b.name} (${b.area}) [${rating}${chaats}] [Phone: ${phone}]\n  Highlight: ${b.highlight}`;
     })
     .join('\n\n');
 }
@@ -237,7 +244,7 @@ function formatHospitalList(hospitals) {
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantWeather = null) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantSweetShops = [], relevantWeather = null) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -874,13 +881,36 @@ optional:
 
 ${formatHospitalList(relevantHospitals)}
 
+If a visitor asks about sweet shops, mithai, savoury snacks, or chaats —
+here are the ONLY shops you may put in "sweetShopRecommendations" — do
+not include any other sweet shop from your own general knowledge, even
+if you believe it's real, since we can only vouch for the accuracy of
+this specific, hand-verified list. For each one you include, copy its
+name, area, phone, chaats, and highlight exactly as given below.
+"chaats" is a real, independently verified yes/no fact per shop — never
+infer it from a shop simply selling sweets, and never state or imply a
+shop offers chaats unless its own line below says so. The list below is
+already given in the order to present it in "reply" — a curated
+reference order, not a rating-based one — so don't re-sort it by the
+rating shown. "phone"/"rating"/"reviewCount" may be null for a shop below
+— say so honestly (e.g. "no phone number on file for this one") rather
+than inventing one. Never state or imply current stock, live pricing, or
+that a specific sweet is available today — this app has no live data for
+that. If THIS SWEET SHOP list below is empty, leave
+"sweetShopRecommendations" empty — it could mean the question wasn't
+about sweets, or was too specific for a verified match; either way, stay
+helpful in "reply" rather than declining, the same as every other
+category above:
+
+${formatContactList(relevantSweetShops)}
+
 None of hotelRecommendations, resortRecommendations,
 homestayRecommendations, transportHubRecommendations,
-cabServiceRecommendations, selfDriveRecommendations, or
-hospitalRecommendations use "day" or "order" — unlike every other
-recommendation category, a place to stay, a way of travelling, or a
-hospital isn't a sequenced daily activity, so never try to tag one with a
-day or position in a plan.
+cabServiceRecommendations, selfDriveRecommendations,
+hospitalRecommendations, or sweetShopRecommendations use "day" or
+"order" — unlike every other recommendation category, a place to stay, a
+way of travelling, a hospital, or a sweet shop isn't a sequenced daily
+activity, so never try to tag one with a day or position in a plan.
 
 When your itinerary places a restaurant, nightlife venue, or park
 recommendation on the same day as a temple, only describe it as "near,"

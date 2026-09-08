@@ -18,6 +18,7 @@ const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require(
 const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues } = require('./sports');
 const { getRelevantTransportHubs, getRelevantCabServices, getRelevantSelfDriveServices, getRelevantDestinations } = require('./transport');
 const { getRelevantHospitals } = require('./hospitals');
+const { getRelevantSweetShops } = require('./sweets');
 const { getRelevantWeather } = require('./weather');
 
 // "Structured output": instead of letting Gemini write its whole answer as
@@ -359,8 +360,26 @@ const CHAT_RESPONSE_SCHEMA = {
         required: ['name', 'area', 'tier', 'emergency', 'activities', 'highlight'],
       },
     },
+    sweetShopRecommendations: {
+      type: Type.ARRAY,
+      description:
+        'Sweet shops (mithai) being recommended in this reply, for a question about sweets, mithai, savoury snacks, or chaats. Empty if this reply is not recommending one. Present entries in the exact order given below (a curated reference order), not re-sorted by rating.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          area: { type: Type.STRING },
+          phone: { type: Type.STRING, nullable: true },
+          rating: { type: Type.NUMBER, nullable: true },
+          reviewCount: { type: Type.NUMBER, nullable: true },
+          chaats: { type: Type.BOOLEAN },
+          highlight: { type: Type.STRING },
+        },
+        required: ['name', 'area', 'chaats', 'highlight'],
+      },
+    },
   },
-  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations', 'transportHubRecommendations', 'cabServiceRecommendations', 'selfDriveRecommendations', 'hospitalRecommendations'],
+  required: ['reply', 'restaurantRecommendations', 'nightlifeRecommendations', 'parkRecommendations', 'templeRecommendations', 'cinemaRecommendations', 'shopRecommendations', 'attractionRecommendations', 'hotelRecommendations', 'resortRecommendations', 'homestayRecommendations', 'spectatorVenueRecommendations', 'sportsFacilityRecommendations', 'gamingRecommendations', 'transportHubRecommendations', 'cabServiceRecommendations', 'selfDriveRecommendations', 'hospitalRecommendations', 'sweetShopRecommendations'],
 };
 
 const app = express();
@@ -484,6 +503,7 @@ app.post('/api/chat', async (req, res) => {
     const relevantCabServices = getRelevantCabServices(allVisitorText);
     const relevantSelfDriveServices = getRelevantSelfDriveServices(allVisitorText);
     const relevantHospitals = getRelevantHospitals(allVisitorText);
+    const relevantSweetShops = getRelevantSweetShops(allVisitorText);
     const relevantDestinations = getRelevantDestinations(allVisitorText);
     // The one live, real-time data source in this app — everything
     // else above is a hand-verified static file. Only actually fetched
@@ -507,7 +527,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-3.5-flash-lite',
       contents,
       config: {
-        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals, relevantDestinations, relevantWeather),
+        systemInstruction: buildSystemPrompt(todayInIndia, relevantVenues, relevantRestaurants, relevantParks, relevantTemples, relevantCinemas, relevantShops, relevantAttractions, relevantHotels, relevantResorts, relevantHomestays, relevantSpectatorVenues, relevantSportsFacilities, relevantGamingVenues, relevantTransportHubs, relevantCabServices, relevantSelfDriveServices, relevantHospitals, relevantDestinations, relevantSweetShops, relevantWeather),
         // Raised from 2048: a broad "market" question now returns all 16
         // real market entries with full text fields, which needs ~2,400
         // tokens on its own. At 2048, generation hit MAX_TOKENS mid-JSON
@@ -542,7 +562,7 @@ app.post('/api/chat', async (req, res) => {
       // if it's ever malformed for some reason, fall back to showing the
       // raw text rather than failing the whole request.
       console.error('Failed to parse structured response:', parseError.message);
-      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [], transportHubRecommendations: [], cabServiceRecommendations: [], selfDriveRecommendations: [], hospitalRecommendations: [] };
+      parsed = { reply: response.text, restaurantRecommendations: [], nightlifeRecommendations: [], parkRecommendations: [], templeRecommendations: [], cinemaRecommendations: [], shopRecommendations: [], attractionRecommendations: [], hotelRecommendations: [], resortRecommendations: [], homestayRecommendations: [], spectatorVenueRecommendations: [], sportsFacilityRecommendations: [], gamingRecommendations: [], transportHubRecommendations: [], cabServiceRecommendations: [], selfDriveRecommendations: [], hospitalRecommendations: [], sweetShopRecommendations: [] };
     }
 
     res.json({
@@ -564,6 +584,7 @@ app.post('/api/chat', async (req, res) => {
       cabServiceRecommendations: parsed.cabServiceRecommendations,
       selfDriveRecommendations: parsed.selfDriveRecommendations,
       hospitalRecommendations: parsed.hospitalRecommendations,
+      sweetShopRecommendations: parsed.sweetShopRecommendations,
     });
   } catch (error) {
     console.error('Error talking to Gemini:', error.message);

@@ -288,6 +288,7 @@ function renderRecommendations(data) {
   const categories = [
     data.templeRecommendations,
     data.restaurantRecommendations,
+    data.sweetShopRecommendations,
     data.nightlifeRecommendations,
     data.parkRecommendations,
     data.cinemaRecommendations,

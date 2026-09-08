@@ -2530,6 +2530,105 @@ nightlife venues stay as plain text for now.
       those exact figures
 - [x] Regression-checked: a temple question is completely unaffected
 
+## Added an eighteenth category: sweet shops (mithai), with a curated reference rank (2026-09-08)
+- [x] User supplied a real, source-checked PDF of 19 Guwahati sweet shops
+      (name, location, phone, Google rating + review count, and a "What is
+      Available" column shared by every row except that some additionally
+      list "Chaats"). Only one Mithai-tagged entry existed anywhere in the
+      app before this (Kiranshree Sweets, in `restaurants.js`)
+- [x] Design reviewed before implementation (plan mode): first draft
+      copied `cabServices`/`selfDriveServices`' simple "named shop, or
+      else full list sorted by rating" matching too literally. Corrected
+      after user feedback to: "Chaats" is a real per-shop AND-filter;
+      area matching narrows by locality, including shops whose `area`
+      field lists multiple localities (e.g. MISTIMUKH: "GS Road / South
+      Sarania / Lachit Nagar") matching on ANY one being mentioned;
+      Kiranshree Sweets (real `restaurants.js` entry, confirmed area is
+      Paltan Bazaar, not GS Road) folded in as a 20th entry; the source
+      PDF's own "Position for reference" column is a real curated rank
+      the chatbot uses to order results (not star rating) — Kiranshree
+      Sweets inserted at rank 5, original ranks 5-19 shifted to 6-20
+- [x] Built `sweets.js`: `sweetShops` array (20 entries) with
+      `name/area/phone (nullable)/rating/reviewCount (nullable)/chaats
+      (true/false)/referenceRank/highlight`; local `matchKeywords()`
+      helper (file-local copy, same as every other category file);
+      `SWEETSHOP_NAME_KEYWORDS`; `SWEETSHOP_TRIGGER` (mithai/sweets/sweet
+      shop/mishti/mistanna/savoury/chaats, plurals checked per
+      [[feedback-recurring-regex-bug]]-style past bugs); area matching by
+      splitting each entry's `area` on "/" into real locality fragments,
+      matched as plain substrings (no big canonicalization table needed
+      for 20 shops); `getRelevantSweetShops()` — named match narrows
+      first, else trigger gates the category on/off, then chaats/area
+      AND-narrow, sorted by `referenceRank` ascending, no top-N cap
+- [x] `server.js`: imported `getRelevantSweetShops`, computed
+      `relevantSweetShops` alongside the other categories, added
+      `sweetShopRecommendations` to `CHAT_RESPONSE_SCHEMA`
+      (`chaats` required and non-nullable since real data always has a
+      value; `phone`/`rating`/`reviewCount` nullable, matching the two
+      real no-phone shops), added it to the schema's top-level `required`
+      array, threaded `relevantSweetShops` into `buildSystemPrompt(...)`
+      as a new final argument (before `relevantWeather`), added it to
+      both the JSON-parse-failure fallback and the real `res.json(...)`
+- [x] `systemPrompt.js`: added the new parameter to `buildSystemPrompt`;
+      extended the shared `formatContactList()` (also used by cab/
+      self-drive) with two additive tweaks — "Phone: not listed" instead
+      of a literal null, and a "Chaats: yes/no" segment shown only when
+      the field is present (zero behavior change for cab/self-drive);
+      added a new guardrail paragraph mirroring the self-drive one:
+      copy fields exactly and in the given (curated-rank) order, don't
+      re-sort by star rating, null phone/rating/reviewCount handled
+      honestly, no live stock/pricing claims
+- [x] `public/script.js`: added `data.sweetShopRecommendations` to the
+      `categories` array in `renderRecommendations()` — the existing
+      `'reviewCount' in rec` meta branch and generic `rec.phone` line
+      already render this shape correctly with no further changes.
+      Deliberately skipped a dedicated Chaats badge for this first pass
+- [x] Verified data sanity directly: 20 entries, exactly one intentional
+      duplicate pair (the two Bhartiya Jalpan branches), 3 null-phone
+      shops (Dalimi Sweets, Radhika Sweets, Kiranshree Sweets), 10 true /
+      10 false chaats split, complete non-repeating 1-20 `referenceRank`
+      with Kiranshree Sweets at exactly 5
+- [x] Fixed a real bug caught by this verification pass, before it ever
+      reached a live test: the first draft of the new sweet-shop
+      guardrail paragraph used backtick-quoted field names (`` `phone` ``
+      etc.) INSIDE `systemPrompt.js`'s giant backtick template literal —
+      broke the whole file with a syntax error the instant it was
+      required. Switched to plain double-quotes; verified the file loads
+      and the full prompt builds cleanly afterward
+- [x] Verified matcher logic directly: bare "sweets"/"mithai"/"savoury" →
+      all 20 in referenceRank order; "chaats" alone → only the 10 real
+      chaats:true shops, still in referenceRank order; a named shop
+      ("Ashok Sweets" vs "Ashok Sweets & Namkeen") narrows to exactly the
+      right one without cross-matching; a multi-locality area query
+      ("Lachit Nagar", "GS Road") correctly returns every shop listing
+      that locality among its real fragments (e.g. both Ashok Sweets AND
+      MISTIMUKH for Lachit Nagar); a combined "chaats near Ganeshguri"
+      query narrows on both dimensions at once (real AND-filter, not a
+      soft fallback); an unrelated query returns none; a bare "Bhartiya
+      Jalpan" mention correctly returns both real branches
+- [x] Verified live against a fresh server process (confirmed via a
+      clean background-task start, not a possibly-stale one): "best
+      sweet shops in Guwahati" returned all 20 real entries in the
+      correct curated order with a sensible reply; "chaats near Lachit
+      Nagar" correctly narrowed to just Ashok Sweets (MISTIMUKH excluded
+      since its chaats is false, proving the AND-filter, not an OR);
+      "Any sweet shop in Hatigaon?" returned Dalimi Sweets with an honest
+      "no phone number on file" instead of a fabricated one; Kiranshree
+      Sweets shows the identical 4.3 rating whether asked about as a
+      restaurant or a sweet shop; "cheap cafes in Guwahati" (regression)
+      returned 6 real restaurants and correctly zero sweet shops — no
+      false-positive category bleed
+- [x] Verified visually with real headless-browser screenshots
+      (Playwright, scratch install, not a project dependency, same
+      one-off practice as earlier sessions): a combined
+      "chaats near Hatigaon and Six Mile" query rendered a single,
+      correctly-styled Govindam Sweets card (Dalimi Sweets in Hatigaon
+      correctly excluded since it doesn't serve chaats) with phone/
+      rating/reviews/highlight all shown normally; "Tell me about Dalimi
+      Sweets" rendered its card with the phone row cleanly omitted
+      entirely (no broken "Phone: null" text); zero browser console
+      errors in either case
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
