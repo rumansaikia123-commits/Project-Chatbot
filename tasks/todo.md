@@ -2629,6 +2629,87 @@ nightlife venues stay as plain text for now.
       entirely (no broken "Phone: null" text); zero browser console
       errors in either case
 
+## Added a nineteenth category: two-wheeler (bike/scooter) rentals (2026-09-08)
+- [x] User supplied a real, source-checked PDF of 19 Guwahati two-wheeler
+      rental businesses (name, location, phone, Google rating + review
+      count, and a "Bikes / Scooters Available" column identical for
+      every row — no per-shop differentiator, same situation as sweet
+      shops' "What is Available" column). Same core shape as
+      `cabServices`/`selfDriveServices` already in `transport.js`
+- [x] Design reviewed before implementation (plan mode, two direct
+      questions this time since the trade-offs were narrow): found
+      "Ahija Self Drive" already exists in `selfDriveServices` (same
+      phone number, same area) rated 4.4/2600 reviews there vs this
+      PDF's 4.3/2717 — user chose to treat the newer PDF as authoritative
+      and update the existing entry to match, same "one rating across
+      files" rule as Terra Mayaa/Kiranshree Sweets; user chose to add
+      this as a new array INSIDE `transport.js` (not a standalone file
+      like `sweets.js` was), since it's genuinely the same vehicle-rental
+      domain already living there
+- [x] `transport.js`: updated Ahija Self Drive's `selfDriveServices`
+      entry to `rating: 4.3, reviewCount: 2717`; added `twoWheelerRentals`
+      array (19 entries, all real phone numbers, no nulls this time);
+      `TWOWHEELER_NAME_KEYWORDS`; `TWOWHEELER_TRIGGER` (bike/scooter/
+      two-wheeler/motorcycle/moped/scooty, plurals checked per
+      [[feedback-recurring-regex-bug]]-style past bugs); area matching
+      reusing the sweets.js fragment-splitting approach but splitting on
+      BOTH "/" and "," since this source mixes delimiters inconsistently;
+      `getRelevantTwoWheelerRentals()` — named match narrows, else
+      trigger gates the category, then an optional area narrow, sorted
+      by rating descending
+- [x] `server.js`: imported `getRelevantTwoWheelerRentals`, computed
+      `relevantTwoWheelerRentals`, added `twoWheelerRentalRecommendations`
+      to `CHAT_RESPONSE_SCHEMA` (same shape as `selfDriveRecommendations`
+      exactly, since every entry has a real phone this time), added it
+      to the schema's top-level `required` array, threaded it into
+      `buildSystemPrompt(...)` as a new final argument (before
+      `relevantWeather`), added it to both the JSON-parse-failure
+      fallback and the real `res.json(...)`
+- [x] `systemPrompt.js`: added the new parameter to `buildSystemPrompt`;
+      reused `formatContactList()` as-is (no changes needed — no
+      `chaats`-equivalent field, no null phones this time); added a new
+      guardrail paragraph mirroring the self-drive one: copy fields
+      exactly, ratings may be null, never imply live bike availability
+      or price; added `twoWheelerRentalRecommendations` to the existing
+      "these categories don't use day/order" list
+- [x] `public/script.js`: added `data.twoWheelerRentalRecommendations` to
+      the `categories` array in `renderRecommendations()` — the existing
+      `'reviewCount' in rec` meta branch and generic `rec.phone` line
+      already render this shape correctly with no further changes
+- [x] Verified data sanity directly: 19 entries, all real non-null phone
+      numbers, updated Ahija Self Drive rating (4.3/2717) confirmed
+      present in `selfDriveServices`
+- [x] Verified matcher logic directly: bare "bike rental"/"scooter
+      rental"/"scooty" → all 19, sorted by rating; a named shop
+      ("RideHard") narrows correctly; "bike rental in Navodaya Nagar"
+      (comma-delimited source) correctly matched both Oneride Bike
+      Rental (compound area) and Zoom Bike (single area) sharing that
+      locality; "scooter rental in VIP Road" (slash-delimited source)
+      correctly matched Canopy Northeast and JAOBOL Bike & Car Rental;
+      an unrelated query returned none; a bare "Ahija bike rental" name
+      match correctly returned just that one entry
+- [x] Verified live against a fresh server process: "Where can I rent a
+      bike or scooter in Guwahati?" returned all 19 real entries with a
+      sensible reply; "Any bike rental near VIP Road?" correctly
+      narrowed to the same two real matches found in the unit check;
+      "Tell me about Ahija self drive car rental" now shows 4.3/2717 in
+      `selfDriveRecommendations` (not the old 4.4/2600), and the reply
+      naturally mentioned the business also rents two-wheelers; a cab
+      services regression ("cab to Shillong") returned 8 real cabs and
+      correctly zero two-wheeler rentals; an unrelated temple question
+      correctly returned zero two-wheeler rentals
+- [x] Verified visually with real headless-browser screenshots
+      (Playwright, same scratch install): "Any bike rental near VIP
+      Road?" rendered both matching cards correctly styled (rating,
+      review count, phone, area, italic highlight), matching the
+      existing cab/self-drive card style exactly; zero browser console
+      errors. One screenshot briefly appeared to show a wrong review
+      count (283 instead of 287) — re-checked directly against the raw
+      API response and via a second screenshot immediately after, both
+      showed the correct 287; the data and code are confirmed correct,
+      most likely a misread of small screenshot text rather than a real
+      bug, but noted here rather than silently dismissed
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

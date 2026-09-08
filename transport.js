@@ -193,7 +193,12 @@ const selfDriveServices = [
   { name: 'A to Z Self Drive', area: 'At the airport, Kahikuchi', phone: '9387933157', rating: 4.8, reviewCount: 474,
     highlight: 'Open 24 hours, right at the airport — self-drive car and bike rental.' },
 
-  { name: 'Ahija Self Drive', area: 'Zoo Road Tiniali, Ambikagirinagar', phone: '7670017670', rating: 4.4, reviewCount: 2600,
+  // Rating/reviewCount updated from a newer source (a dedicated
+  // two-wheeler rental directory that also covers this same real
+  // business, see twoWheelerRentals below) — kept in sync with that
+  // entry, the same "same real place, one rating" rule already applied
+  // to Terra Mayaa/Maroon Room/Kiranshree Sweets elsewhere in this app.
+  { name: 'Ahija Self Drive', area: 'Zoo Road Tiniali, Ambikagirinagar', phone: '7670017670', rating: 4.3, reviewCount: 2717,
     highlight: 'A large, well-reviewed self-drive car rental fleet.' },
 
   { name: 'Onroadz Self Drive', area: 'Chandmari', phone: '+91 9655214888', rating: 4.8, reviewCount: 386,
@@ -201,6 +206,59 @@ const selfDriveServices = [
 
   { name: 'Guwahati Self Drive', area: 'Ananda Nagar, GS Road', phone: '09054291505', rating: 4.3, reviewCount: 355,
     highlight: 'A self-drive fleet ranging from compact cars to SUVs, including luxury options.' },
+];
+
+// Real two-wheeler (bike/scooter) rental businesses, from a dedicated
+// source-checked directory. Every real entry lists "Motorcycles and
+// scooters" as what's available — no per-shop differentiator — so
+// `highlight` is the same honest, generic line for all 19 rather than
+// inventing a distinguishing detail that isn't in the source. Unlike
+// cabServices/selfDriveServices above, every entry here has a real phone
+// number (no nulls).
+const twoWheelerRentals = [
+  { name: 'RideHard', area: 'Athgaon / Zabbar Bazar', phone: '+91 86388 52052', rating: 5.0, reviewCount: 1877,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Mtt Rental', area: 'Lalmati', phone: '+91 93955 00397', rating: 5.0, reviewCount: 53,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Guwahati Bike Rental', area: 'Japorigog', phone: '+91 98268 47907', rating: 5.0, reviewCount: 37,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Royal Ride Rentals', area: 'Ahom Gaon', phone: '+91 91016 15872', rating: 5.0, reviewCount: 31,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'The Bike Hub Rental', area: 'Bhangagarh', phone: '+91 69001 86840', rating: 4.9, reviewCount: 371,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Easy Rider Rental Bikes', area: 'Narengi Tinali', phone: '+91 93944 21496', rating: 4.9, reviewCount: 287,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'GoRide Rental Service', area: 'Lokhra', phone: '+91 93653 48305', rating: 4.9, reviewCount: 152,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Oneride Bike Rental', area: 'Basistha Chariali, Navodaya Nagar', phone: '+91 93950 36787', rating: 4.9, reviewCount: 80,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'AR Bike Rental', area: 'Hatigaon / Bhetapara', phone: '+91 93657 57448', rating: 4.9, reviewCount: 66,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Canopy Northeast', area: 'Six Mile, VIP Road', phone: '+91 70990 77667', rating: 4.8, reviewCount: 3068,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'KOHUA NORTHEAST', area: 'South Sarania, Sarania Hills', phone: '+91 70029 63733', rating: 4.8, reviewCount: 1563,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Zoom Bike', area: 'Navodaya Nagar', phone: '+91 88128 48989', rating: 4.8, reviewCount: 359,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'JAOBOL Bike & Car Rental', area: 'Bormotoria / VIP Road', phone: '+91 91012 39054', rating: 4.8, reviewCount: 287,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Country Rides', area: 'Beltola Tiniali', phone: '+91 99582 97569', rating: 4.8, reviewCount: 275,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Baruah Two Wheeler Rental Services', area: 'Hengrabari', phone: '+91 70025 83007', rating: 4.8, reviewCount: 180,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'ZEEWHEELS', area: 'Sarania Hills / Zoo Road Tiniali', phone: '+91 87238 22301', rating: 4.7, reviewCount: 256,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Northeast Ride', area: 'Lokhra', phone: '+91 80113 17055', rating: 4.6, reviewCount: 431,
+    highlight: 'Rents motorcycles and scooters.' },
+  { name: 'Zola Adventures Rides', area: 'Mathgharia / Geeta Nagar', phone: '+91 86388 75616', rating: 4.5, reviewCount: 1589,
+    highlight: 'Rents motorcycles and scooters.' },
+  // Not in this source directory — this is the same real business already
+  // listed above in selfDriveServices for car rental (same phone number,
+  // same area). Kept as a second, independent entry here for the bike/
+  // scooter side of that business, same as Terra Mayaa being two
+  // independent entries in two different files.
+  { name: 'Ahija Self Drive', area: 'Zoo Road Tiniali', phone: '+91 76700 17670', rating: 4.3, reviewCount: 2717,
+    highlight: 'Rents motorcycles and scooters.' },
 ];
 
 const HUB_NAME_KEYWORDS = [
@@ -253,6 +311,28 @@ const SELFDRIVE_NAME_KEYWORDS = [
   { pattern: /guwahati\s?self\s?drive/, name: 'Guwahati Self Drive' },
 ];
 
+const TWOWHEELER_NAME_KEYWORDS = [
+  { pattern: /ridehard/, name: 'RideHard' },
+  { pattern: /mtt\s?rental/, name: 'Mtt Rental' },
+  { pattern: /guwahati\s?bike\s?rental/, name: 'Guwahati Bike Rental' },
+  { pattern: /royal\s?ride\s?rentals/, name: 'Royal Ride Rentals' },
+  { pattern: /the\s?bike\s?hub(\s?rental)?/, name: 'The Bike Hub Rental' },
+  { pattern: /easy\s?rider(\s?rental\s?bikes)?/, name: 'Easy Rider Rental Bikes' },
+  { pattern: /goride/, name: 'GoRide Rental Service' },
+  { pattern: /oneride/, name: 'Oneride Bike Rental' },
+  { pattern: /ar\s?bike\s?rental/, name: 'AR Bike Rental' },
+  { pattern: /canopy\s?northeast/, name: 'Canopy Northeast' },
+  { pattern: /kohua\s?northeast/, name: 'KOHUA NORTHEAST' },
+  { pattern: /zoom\s?bike/, name: 'Zoom Bike' },
+  { pattern: /jaobol/, name: 'JAOBOL Bike & Car Rental' },
+  { pattern: /country\s?rides/, name: 'Country Rides' },
+  { pattern: /baruah\s?two\s?wheeler/, name: 'Baruah Two Wheeler Rental Services' },
+  { pattern: /zeewheels/, name: 'ZEEWHEELS' },
+  { pattern: /northeast\s?ride\b/, name: 'Northeast Ride' },
+  { pattern: /zola\s?adventures/, name: 'Zola Adventures Rides' },
+  { pattern: /ahija/, name: 'Ahija Self Drive' },
+];
+
 const DESTINATION_NAME_KEYWORDS = [
   { pattern: /\bjorhat\b/, name: 'Jorhat' },
   { pattern: /\bdibrugarh\b/, name: 'Dibrugarh' },
@@ -284,6 +364,13 @@ const DESTINATION_NAME_KEYWORDS = [
 const SELFDRIVE_TRIGGER = /self[\s-]?driv|drive\s?(it\s?)?myself|without\s?a\s?driver|rent\s?a\s?car\s?myself/;
 const CAB_TRIGGER =
   /\bcabs?\b|\btaxis?\b|hire\s?a\s?(car|driver)|book\s?a\s?(cab|taxi)|outstation|inter[\s-]?state|intra[\s-]?state|car\s?rental|chauffeur|with\s?a\s?driver/;
+
+// "Scooty" is a very common colloquial Indian term for a scooter,
+// worth its own word here rather than assuming "scooter" covers it.
+// Plurals checked deliberately — this project has repeatedly hit bugs
+// where a trailing \b silently failed to match a natural plural.
+const TWOWHEELER_TRIGGER =
+  /\bbikes?\b|\bscooters?\b|\bscooty\b|two[\s-]?wheelers?\b|\bmotorcycles?\b|\bmopeds?\b/;
 
 // Real bug found live: "How to go to Shillong from Guwahati?" (and the
 // same phrasing for Jorhat, Nalbari, Itanagar, Cherrapunjee, Dawki,
@@ -382,13 +469,54 @@ function getRelevantSelfDriveServices(message) {
   return selfDriveServices;
 }
 
+// Several two-wheeler rentals' `area` genuinely lists more than one real
+// locality, and — unlike every other category's area strings — this
+// source mixes its delimiter: some use "/" ("Athgaon / Zabbar Bazar"),
+// some use "," ("Basistha Chariali, Navodaya Nagar"). Splitting on both
+// is what makes a shop show up correctly no matter which of its listed
+// localities is asked about.
+function twoWheelerAreaFragments(rental) {
+  return rental.area.split(/\/|,/).map((fragment) => fragment.trim().toLowerCase());
+}
+
+// Named match narrows, same as every other category. Otherwise
+// TWOWHEELER_TRIGGER gates whether this category is relevant at all;
+// once relevant, an area mention (if any) narrows further. Sorted by
+// rating descending — the source PDF happens to already be in that
+// order, but sorting explicitly guarantees it rather than relying on
+// declaration order by coincidence.
+function getRelevantTwoWheelerRentals(message) {
+  const text = message.toLowerCase();
+  const matchedNames = matchKeywords(text, TWOWHEELER_NAME_KEYWORDS, 'name');
+  if (matchedNames.length > 0) {
+    return twoWheelerRentals.filter((r) => matchedNames.includes(r.name));
+  }
+
+  if (!TWOWHEELER_TRIGGER.test(text)) return [];
+
+  const allFragments = new Set();
+  for (const rental of twoWheelerRentals) {
+    for (const fragment of twoWheelerAreaFragments(rental)) allFragments.add(fragment);
+  }
+  const mentionedFragments = [...allFragments].filter((fragment) => text.includes(fragment));
+
+  let results = twoWheelerRentals;
+  if (mentionedFragments.length > 0) {
+    results = results.filter((r) => twoWheelerAreaFragments(r).some((fragment) => mentionedFragments.includes(fragment)));
+  }
+
+  return [...results].sort((a, b) => b.rating - a.rating);
+}
+
 module.exports = {
   transportHubs,
   cabServices,
   selfDriveServices,
   destinations,
+  twoWheelerRentals,
   getRelevantTransportHubs,
   getRelevantCabServices,
   getRelevantSelfDriveServices,
   getRelevantDestinations,
+  getRelevantTwoWheelerRentals,
 };

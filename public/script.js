@@ -303,6 +303,7 @@ function renderRecommendations(data) {
     data.transportHubRecommendations,
     data.cabServiceRecommendations,
     data.selfDriveRecommendations,
+    data.twoWheelerRentalRecommendations,
     data.hospitalRecommendations,
   ];
   const all = categories.flat();

@@ -244,7 +244,7 @@ function formatHospitalList(hospitals) {
 // Builds the full system prompt, given today's real date, any nightlife
 // venues, restaurants, and parks relevant to the visitor's latest message
 // (all passed in from server.js, computed fresh for every request).
-function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantSweetShops = [], relevantWeather = null) {
+function buildSystemPrompt(todayString, relevantVenues = [], relevantRestaurants = [], relevantParks = [], relevantTemples = [], relevantCinemas = [], relevantShops = [], relevantAttractions = [], relevantHotels = [], relevantResorts = [], relevantHomestays = [], relevantSpectatorVenues = [], relevantSportsFacilities = [], relevantGamingVenues = [], relevantTransportHubs = [], relevantCabServices = [], relevantSelfDriveServices = [], relevantHospitals = [], relevantDestinations = [], relevantSweetShops = [], relevantTwoWheelerRentals = [], relevantWeather = null) {
   return `You are a friendly, knowledgeable local guide for Guwahati, Assam, India.
 You help visitors and tourists learn about the city: places to visit, food to try,
 culture, transport, and how to plan their time here.
@@ -904,12 +904,33 @@ category above:
 
 ${formatContactList(relevantSweetShops)}
 
+If a visitor asks about renting a bike, scooter, or two-wheeler — here
+are the ONLY businesses you may put in "twoWheelerRentalRecommendations"
+— do not include any other bike/scooter rental from your own general
+knowledge, even if you believe it's real, since we can only vouch for
+the accuracy of this specific, hand-verified list. This is separate from
+app-based ride-hailing (Uber/Ola/Rapido, mentioned only for in-city
+travel further below) and from private chauffeur-driven cab hire
+(cabServiceRecommendations above) — a two-wheeler rental is something
+the visitor drives themself. For each one you include, copy its name,
+area, phone, and highlight exactly as given below; rating/review count
+may be null, say so honestly rather than inventing a number. Never state
+or imply that a specific bike is available right now, or quote a current
+rental price — this app has no live booking or pricing data for that;
+suggest the visitor confirm current rates and availability directly with
+the business. If THIS TWO-WHEELER RENTAL list below is empty, leave
+"twoWheelerRentalRecommendations" empty — same "could just be no match,
+stay helpful" reasoning as every other category above:
+
+${formatContactList(relevantTwoWheelerRentals)}
+
 None of hotelRecommendations, resortRecommendations,
 homestayRecommendations, transportHubRecommendations,
 cabServiceRecommendations, selfDriveRecommendations,
-hospitalRecommendations, or sweetShopRecommendations use "day" or
-"order" — unlike every other recommendation category, a place to stay, a
-way of travelling, a hospital, or a sweet shop isn't a sequenced daily
+hospitalRecommendations, sweetShopRecommendations, or
+twoWheelerRentalRecommendations use "day" or "order" — unlike every
+other recommendation category, a place to stay, a way of travelling, a
+hospital, a sweet shop, or a rental business isn't a sequenced daily
 activity, so never try to tag one with a day or position in a plan.
 
 When your itinerary places a restaurant, nightlife venue, or park
