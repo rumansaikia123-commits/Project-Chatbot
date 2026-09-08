@@ -277,7 +277,12 @@ const CUISINE_KEYWORDS = [
   { pattern: /modern\s?indian/, cuisine: 'Modern Indian' },
   { pattern: /south\s?indian|\bdosas?\b|\bidlis?\b/, cuisine: 'South Indian' },
   { pattern: /\bmithai\b|\bsweets?\b/, cuisine: 'Mithai' },
-  { pattern: /street\s?food/, cuisine: 'Street Food' },
+  // Snack item names added after a real bug: "samosa in GS Road" found no
+  // match even though Kiranshree Sweets (the one Street Food-tagged entry)
+  // genuinely sells them — nothing connected the specific snack name to
+  // the cuisine tag. Plurals included from the start, per this project's
+  // repeated \bword\b-missing-plurals bug history.
+  { pattern: /street\s?food|\bsamosas?\b|\bsingaras?\b|\bpakoras?\b|\bpakodas?\b|\bkachoris?\b|\bvadas?\b/, cuisine: 'Street Food' },
   { pattern: /\bmughlai\b/, cuisine: 'Mughlai' },
   { pattern: /\bbiryanis?\b/, cuisine: 'Biryani' },
   { pattern: /\btibetan\b|\bmomos?\b/, cuisine: 'Tibetan' },

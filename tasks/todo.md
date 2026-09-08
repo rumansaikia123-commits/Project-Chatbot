@@ -2801,6 +2801,44 @@ nightlife venues stay as plain text for now.
       self-drive option" text both display correctly and distinctly;
       zero browser console errors
 
+## Quick fix: samosa and other savoury snack names weren't recognized (2026-09-08)
+- [x] Live bug found by the user: "where can I get samosa in GS road?"
+      returned a "no verified match" fallback, even though Makhan Bhog
+      and MISTIMUKH (real, area-matching sweet shops that genuinely sell
+      savoury snacks) exist. Confirmed via `grep -ri samosa` that the
+      word appeared nowhere in the codebase — not in `sweets.js`'s
+      `SWEETSHOP_TRIGGER`, not in `restaurants.js`'s `Street Food`
+      cuisine keyword (`/street\s?food/` only matched that literal
+      phrase). Same root cause as every prior keyword-matching bug this
+      project has hit — the data was right, nothing told the code the
+      word implied it
+- [x] Discussed with the user whether this whole bug class should be
+      fixed via function calling (letting Gemini decide relevance
+      itself instead of us maintaining a keyword list) instead of
+      another one-off patch — agreed function calling is the right
+      long-term fix but is a large, dedicated-session architecture
+      change; patched this specific gap now, scoped the bigger rewrite
+      for later
+- [x] Added `samosas?`, `singaras?` (the common Assamese/Bengali term for
+      a samosa-like snack), `pakoras?`, `pakodas?`, `kachoris?`, `vadas?`
+      to `sweets.js`'s `SWEETSHOP_TRIGGER` and to `restaurants.js`'s
+      `Street Food` cuisine keyword — plurals included from the start
+      this time, per [[feedback-recurring-regex-bug]]
+- [x] Verified directly: `getRelevantSweetShops('samosa in GS road')` →
+      Makhan Bhog + MISTIMUKH (was `[]` before); `getRelevantRestaurants`
+      → Kiranshree Sweets (was `[]` before); confirmed no regression on
+      existing chaats/mithai/street-food matching
+- [x] Verified live against a fresh server: replayed the user's exact
+      message 3 times — 2 of 3 correctly returned Makhan Bhog/MISTIMUKH
+      in `sweetShopRecommendations`, the reply text always mentioned a
+      real match (Kiranshree Sweets) so the visitor was never left with
+      a fully empty answer either way. The 1-of-3 miss is Gemini's own
+      structured-output randomness (the correct data was confirmed
+      present in the prompt every single time via direct checks) — a
+      pre-existing model characteristic already documented elsewhere in
+      this app (the reason temperature is set to 0.2), not a defect in
+      this fix. Regression-checked "chaats near Ganeshguri" — unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

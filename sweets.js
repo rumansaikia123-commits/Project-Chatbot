@@ -127,8 +127,14 @@ const SWEETSHOP_NAME_KEYWORDS = [
 // checked deliberately: this project has repeatedly hit bugs where a
 // trailing \b failed to match a natural plural (e.g. "cafe" not matching
 // "cafes") because "s" is still a word character right after it.
+// Common savoury snack names added after a real bug: "samosa in GS Road"
+// returned no match even though the sweet shops that came up for a plain
+// "sweet shops in GS Road" question genuinely sell savoury snacks too —
+// the data was right, the trigger just never recognized the word. Plurals
+// included deliberately from the start this time, per this project's
+// repeated \bword\b-missing-plurals bug history.
 const SWEETSHOP_TRIGGER =
-  /\bmithai\b|\bsweets?\b|\bsweet\s?shops?\b|\bmishti\b|\bmistanna\b|\bmistaan\b|\bsavo(u)?ry\b|\bchaats?\b/;
+  /\bmithai\b|\bsweets?\b|\bsweet\s?shops?\b|\bmishti\b|\bmistanna\b|\bmistaan\b|\bsavo(u)?ry\b|\bchaats?\b|\bsamosas?\b|\bsingaras?\b|\bpakoras?\b|\bpakodas?\b|\bkachoris?\b|\bvadas?\b/;
 
 function matchKeywords(text, table, field) {
   const matched = [];
