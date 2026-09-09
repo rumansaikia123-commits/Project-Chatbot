@@ -372,7 +372,10 @@ const CUISINE_KEYWORDS = [
   // repeated \bword\b-missing-plurals bug history.
   { pattern: /street\s?food|\bsamosas?\b|\bsingaras?\b|\bpakoras?\b|\bpakodas?\b|\bkachoris?\b|\bvadas?\b/, cuisine: 'Street Food' },
   { pattern: /\bmughlai\b/, cuisine: 'Mughlai' },
-  { pattern: /\bbiryanis?\b/, cuisine: 'Biryani' },
+  // "biriyani" added 2026-09-09 — an extremely common alternate spelling
+  // in India, arguably as common as "biryani" itself; found via the same
+  // misspelling-class check as the FOOD_TRIGGER fix above.
+  { pattern: /\bbiryanis?\b|\bbiriyanis?\b/, cuisine: 'Biryani' },
   { pattern: /\btibetan\b|\bmomos?\b/, cuisine: 'Tibetan' },
   { pattern: /\bsizzlers?\b/, cuisine: 'Sizzlers' },
   { pattern: /\bbuffets?\b/, cuisine: 'Buffet' },
@@ -480,7 +483,14 @@ function parseBudgetSignal(text) {
   return null;
 }
 
-const FOOD_TRIGGER = /\b(restaurants?|food|dining|dine|eat(?:ing|s)?|cuisine|lunch|dinner|breakfast|thali|caf[eé]s?|meal|hungry)\b/;
+// Common misspellings added 2026-09-09 (found via the verify-phrasing
+// skill, triggered by a real live bug report — "restaurents" returned
+// no match at all): restaurants/restaurents/resturants, dining/dinning,
+// breakfast/brekfast. This is a different bug shape than the usual
+// missing-plural one — genuine common typos, not a missing word form —
+// so handled the same way, as explicit alternatives, not a fuzzy-match
+// rewrite of this whole file's style.
+const FOOD_TRIGGER = /\b(restaurants?|restaurents?|resturants?|food|dining|dinning|dine|eat(?:ing|s)?|cuisine|lunch|dinner|breakfast|brekfast|thali|caf[eé]s?|meal|hungry)\b/;
 
 // Looks at what the visitor actually asked and returns only the matching
 // restaurants. Returns [] only when the message isn't food-related at all.

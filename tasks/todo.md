@@ -3265,6 +3265,35 @@ nightlife venues stay as plain text for now.
       passing) — `npm test` unaffected by the systemPrompt.js change
       (pure prompt text, no matcher logic touched there)
 
+## Quick fix: common misspellings in FOOD_TRIGGER and Biryani cuisine (2026-09-09)
+- [x] Live bug reported by the user: "restaurents in Guwahati?" (a
+      genuine, common misspelling) got the off-topic decline, even
+      though the correctly-spelled "restaurants in Guwahati?" works fine
+- [x] **First real use of the `verify-phrasing` skill via the actual
+      Skill tool** (properly loaded this session, unlike its creation
+      session) — invoked it directly on `restaurants.js`'s
+      `FOOD_TRIGGER`, motivated by this exact bug report
+- [x] Generated 16 phrasing variations spanning the whole `FOOD_TRIGGER`
+      word list (not just "restaurant") — found 4 real gaps, all common
+      misspellings: "restaurents", "resturant", "dinning" (double n),
+      "brekfast". Confirmed everything else (eat/hungry/lunch/dinner/
+      meal/thali/cafes, area-qualified, and 2 unrelated sanity checks)
+      already worked correctly
+- [x] Checked a sibling keyword table for the same mistake class per the
+      skill's own procedure, before considering the fix done: found
+      "biriyani" (an extremely common alternate spelling in India,
+      arguably as common as "biryani" itself) also returned zero matches
+      in the Biryani cuisine keyword
+- [x] Fixed both: `FOOD_TRIGGER` gained `restaurents?|resturants?` and
+      `dinning`/`brekfast`; the Biryani cuisine keyword gained
+      `biriyanis?`. Framed explicitly as a different bug shape than the
+      usual missing-plural class — real typos, handled as explicit
+      alternatives rather than a fuzzy-match rewrite
+- [x] Added 3 regression tests (62 total now, all passing). Verified
+      live against a fresh server: the exact reported message now
+      returns real restaurant data; regression pass on temples confirmed
+      unaffected
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

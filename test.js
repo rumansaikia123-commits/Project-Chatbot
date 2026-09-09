@@ -369,3 +369,23 @@ test('gaming venues: a bare "pool" still resolves to nothing on the gaming side 
 // correctly; "play pool" does not. This is a broader pre-existing
 // pattern, not specific to this fix — intentionally not asserted here,
 // noted for whenever that broader fix happens.
+
+// ----- Common misspellings (2026-09-09): found via the verify-phrasing
+// skill, triggered by a real live bug report ("restaurents" returned no
+// match at all). A genuinely different bug shape than the usual
+// missing-plural one — real typos, not a missing word form. -----
+
+test('REGRESSION (restaurant misspellings): "restaurents" and "resturant" both work now', () => {
+  assert.equal(getRelevantRestaurants('restaurents in Guwahati').length, 10);
+  assert.equal(getRelevantRestaurants('resturant recommendations').length, 10);
+});
+test('REGRESSION (dining/breakfast misspellings): "dinning" and "brekfast" both work now', () => {
+  assert.equal(getRelevantRestaurants('good dinning spots').length, 10);
+  assert.equal(getRelevantRestaurants('brekfast options').length, 10);
+});
+test('REGRESSION (biriyani spelling): the common alternate spelling "biriyani" finds the same real matches as "biryani"', () => {
+  const biriyani = getRelevantRestaurants('biriyani places').map((r) => r.name).sort();
+  const biryani = getRelevantRestaurants('biryani places').map((r) => r.name).sort();
+  assert.deepEqual(biriyani, biryani);
+  assert.ok(biriyani.length > 0);
+});
