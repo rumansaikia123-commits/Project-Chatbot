@@ -270,8 +270,16 @@ const ACTIVITY_KEYWORDS = [
   // "swims?" added (2026-09-09): "where can I swim" / "where can I go
   // for a swim" didn't contain the literal word "swimming" that this
   // pattern required — same word-form gap this project has hit
-  // repeatedly elsewhere (cafe/cafes, samosa, etc.).
-  { pattern: /\bswims?\b|\bswimming\b|\baquatic\b|\bpool\b(?=.*(swim|lap))/, activity: 'swimming' },
+  // repeatedly elsewhere (cafe/cafes, samosa, etc.). "dip" added the
+  // same day (found via the verify-phrasing skill's stress test): "fancy
+  // a dip" / "go for a dip" is a common, unambiguous colloquial synonym.
+  // Deliberately NOT adding a bare "\bpool\b" match with no lookahead —
+  // "pool" is genuinely ambiguous in this app (GeT TaggED's activities
+  // include real billiards 'pool'), so a bare "pool"/"any pools nearby"
+  // question is left unmatched rather than risk wrongly assuming
+  // swimming; "swimming pool" as a phrase already matches fine via
+  // \bswimming\b above.
+  { pattern: /\bswims?\b|\bswimming\b|\baquatic\b|\bdip\b|\bpool\b(?=.*(swim|lap))/, activity: 'swimming' },
   { pattern: /\bhockey\b/, activity: 'hockey' },
   { pattern: /\bsquash\b/, activity: 'squash' },
   { pattern: /\bpickleball\b/, activity: 'pickleball' },
@@ -279,6 +287,14 @@ const ACTIVITY_KEYWORDS = [
   { pattern: /\barchery\b/, activity: 'archery' },
   { pattern: /go[\s-]?kart(ing)?/, activity: 'go-karting' },
   { pattern: /\barcade\b/, activity: 'arcade' },
+  // Billiards 'pool' (GeT TaggED's activities), added 2026-09-09 —
+  // found while testing the new swimming-vs-billiards clarifying
+  // question: this activity had NO keyword mapping to it at all before
+  // this, so picking "the pool/billiards table game" led nowhere.
+  // Deliberately requires "table"/"billiards"/"play pool" — never a
+  // bare "\bpool\b" alone, same ambiguity-avoidance reasoning as the
+  // swimming pattern just above.
+  { pattern: /\bpool\s?table\b|\bbilliards\b|\bplay\s?pool\b/, activity: 'pool' },
   { pattern: /\bbowling\b/, activity: 'bowling' },
   { pattern: /laser\s?tag/, activity: 'laser-tag' },
   { pattern: /\bvr\b|virtual\s?reality/, activity: 'vr' },

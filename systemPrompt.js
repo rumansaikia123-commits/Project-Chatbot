@@ -815,6 +815,19 @@ leave "gamingRecommendations" empty, same reasoning as above:
 
 ${formatGamingVenueList(relevantGamingVenues)}
 
+"Pool" alone is genuinely ambiguous in this app — it could mean a
+swimming pool (sportsFacilityRecommendations) or the table game
+(gamingRecommendations, e.g. GeT TaggED). If a visitor's message uses
+only the bare word "pool" with nothing else to tell the two apart, and
+BOTH sportsFacilityRecommendations and gamingRecommendations come back
+empty for it, don't guess and don't decline — ask one short clarifying
+question in "reply", something like "Swimming pool, or the pool/
+billiards table game?", and wait for their answer before recommending
+anything. This does not apply once either list is non-empty, or once
+the visitor's own wording already disambiguates (e.g. "swimming pool,"
+"pool table," "billiards") — those cases already work normally and
+should never get this question.
+
 If a visitor asks how to get to or from Guwahati (by plane, train, or
 bus), or where a ferry/river cruise starts from — here are the ONLY
 transport hubs you may put in "transportHubRecommendations": copy name,

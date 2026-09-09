@@ -333,3 +333,39 @@ test('REGRESSION (GS Road area fix): Christian Basti narrows correctly, and the 
   assert.deepEqual(getRelevantSportsFacilities('swimming in Christian Basti').map((f) => f.name), ['Arista by Ambition']);
   assert.deepEqual(getRelevantGamingVenues('arcade in city center mall').map((g) => g.name), ['Timezone – City Center Mall']);
 });
+
+// Found via the verify-phrasing skill's stress test (2026-09-09), before
+// any user hit it live — "dip" is a common, unambiguous colloquial
+// synonym for swimming that the original word list missed.
+test('REGRESSION (swim synonym): "fancy a dip" / "go for a dip" are recognized as swimming', () => {
+  assert.ok(getRelevantSportsFacilities('fancy a dip').length > 0);
+  assert.ok(getRelevantSportsFacilities('want to go for a dip today').length > 0);
+});
+test('swimming: a bare "pool" is deliberately NOT matched (genuinely ambiguous — GeT TaggED\'s activities include real billiards \'pool\')', () => {
+  assert.equal(getRelevantSportsFacilities('any pools nearby').length, 0);
+});
+test('"learn swimming" correctly defers to spectatorVenues (Association/Government-run), not sportsFacilities', () => {
+  assert.equal(getRelevantSportsFacilities('learn swimming').length, 0);
+  const spectator = getRelevantSpectatorVenues('learn swimming').map((v) => v.name);
+  assert.ok(spectator.includes('Dr. Zakir Hussain Aquatic Complex'));
+});
+
+// REGRESSION (billiards 'pool' had no keyword at all): found while
+// testing the new swimming-vs-billiards clarifying question — picking
+// "the pool/billiards table game" led nowhere, since GeT TaggED's real
+// 'pool' activity had zero keyword mapping to it before this fix.
+test('gaming venues: "pool table" and "billiards" both find GeT TaggED', () => {
+  assert.deepEqual(getRelevantGamingVenues('pool table near me').map((g) => g.name), ['GeT TaggED']);
+  assert.deepEqual(getRelevantGamingVenues('billiards in Guwahati').map((g) => g.name), ['GeT TaggED']);
+});
+test('gaming venues: a bare "pool" still resolves to nothing on the gaming side either, preserving the ambiguity for the clarifying question', () => {
+  assert.equal(getRelevantGamingVenues('any pools nearby').length, 0);
+});
+// KNOWN, DEFERRED GAP (found the same session, left for later per direct
+// decision): any gaming activity phrased as "play X" — not just
+// billiards — gets wrongly deferred to sportsFacilities before the
+// activity match is checked, since the generic word "play" triggers
+// FACILITY_TRIGGER first. "pool table"/"billiards" alone (above) work
+// correctly; "play pool" does not. This is a broader pre-existing
+// pattern, not specific to this fix — intentionally not asserted here,
+// noted for whenever that broader fix happens.

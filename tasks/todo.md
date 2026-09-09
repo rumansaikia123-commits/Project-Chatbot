@@ -3181,9 +3181,89 @@ nightlife venues stay as plain text for now.
 - [x] Added 2 regression tests (54 total now). Verified live against a
       fresh server: both exact reported queries now return correct real
       data (2 hotels for "GS Road", all 17 for "Guwahati")
-- [ ] Told the user to click Manual Deploy on Render, since the earlier
+- [x] Told the user to click Manual Deploy on Render, since the earlier
       swimming-venues push likely hadn't gone live yet — this fix should
       be included in that same deploy
+
+## Added a real project skill: verify-phrasing (2026-09-09)
+- [x] User asked for a repeatable way to stress-test a matcher's
+      keyword coverage against many realistic phrasings BEFORE calling a
+      change done, instead of finding gaps live one at a time (exactly
+      what happened twice today — bare "swim", then GS Road). Confirmed
+      this is a Claude Code *skill* (a procedure I follow), not a tool or
+      an app feature — explained the distinction, including that it
+      isn't literally "always running in the background": either I
+      invoke it proactively when the situation matches, or the user
+      invokes it explicitly; a true always-fires mechanism would be a
+      separate "hook," not a skill
+- [x] Created `.claude/skills/verify-phrasing/SKILL.md` — a project-
+      scoped skill instructing: identify the concept/matcher, generate
+      10-15 realistic phrasing variations spanning direct/casual/
+      indirect/area-qualified/word-form/named-lookup/deliberately-
+      unrelated angles (generated fresh each time, not a fixed list —
+      the whole point is catching the long tail), run them against the
+      real matcher, fix any real gaps found (checking sibling keyword
+      tables for the same mistake, per established practice), add
+      permanent `test.js` regression tests for whatever's found, run the
+      full suite, and report honestly even when nothing is found
+- [x] Tried invoking it via the Skill tool immediately — correctly
+      failed ("Unknown skill"), since a skill created mid-session isn't
+      loaded until a fresh session starts. Ran the exact same procedure
+      manually instead, both to prove the design works and to give the
+      just-shipped swimming feature a real stress test
+- [x] Real stress test run against `getRelevantSportsFacilities`'s
+      swimming matching, 15 variations spanning direct/casual/indirect/
+      area-qualified/budget/word-form/learn-routing/named-lookup/
+      deliberately-unrelated: found "fancy a dip"/"go for a dip" (a real,
+      common, unambiguous colloquial synonym) returned zero matches.
+      Correctly did NOT force-match bare "pool" despite also returning
+      zero — confirmed via `grep` that "pool" is genuinely ambiguous in
+      this app (GeT TaggED's real activities include billiards 'pool'),
+      so guessing swimming there would trade one bug for a different
+      wrong-guess bug. Confirmed "learn swimming" correctly defers to
+      spectatorVenues by design (not a bug) before ruling it in or out
+- [x] Fixed the one real gap: added `\bdip\b` to `ACTIVITY_KEYWORDS`'s
+      swimming pattern; confirmed no false positive against a gym
+      "tricep dips" sanity check. Added 3 regression tests (57 total
+      now, all passing) — the dip fix, the deliberate pool non-match,
+      and the learn-swimming routing — all locked in so future sessions
+      don't need to rediscover these judgment calls
+
+## Added a swimming-vs-billiards clarifying question for bare "pool" (2026-09-09)
+- [x] User asked for a very short clarifying question when someone asks
+      about "pool" ambiguously (swimming vs. the table game) — "rest
+      remains the same"
+- [x] `systemPrompt.js`: added a short guardrail paragraph (right after
+      the gaming section) — when a message uses only the bare word
+      "pool" and BOTH sportsFacilityRecommendations and
+      gamingRecommendations come back empty, ask "Swimming pool, or the
+      pool/billiards table game?" and wait; already-disambiguated
+      wording ("swimming pool," "pool table," "billiards") skips this
+      entirely. No matcher/code changes needed for this part — same
+      pattern already established for the "Adventure sport" three-way
+      split elsewhere in this file (a pure prompt-level heuristic)
+- [x] **Found and fixed a real, separate, pre-existing gap while live-
+      testing this**: billiards 'pool' (GeT TaggED's real activity) had
+      NO keyword mapping to it anywhere — the "billiards table game"
+      half of the brand-new clarifying question would have led nowhere.
+      Added `\bpool\s?table\b|\bbilliards\b|\bplay\s?pool\b/` to
+      `ACTIVITY_KEYWORDS`, same bare-word-ambiguity-avoidance reasoning
+      as the swimming pattern (never a bare `\bpool\b` alone)
+- [x] **Found and deliberately did NOT fix a broader, deeper gap,
+      flagged and left for later per direct decision**: any gaming
+      activity phrased as "play X" (not just billiards) gets wrongly
+      deferred to sportsFacilities before its own activity match is
+      checked, since the generic word "play" triggers
+      `hasFacilityExplicitSignal` first. "pool table"/"billiards" alone
+      work correctly; "play pool" does not — noted as a known gap in a
+      `test.js` comment rather than silently patched or silently
+      ignored
+- [x] Verified live: bare "any pools nearby?" → real clarifying question;
+      "swimming pool near me" → real data, no question; "pool table" →
+      correctly finds GeT TaggED; regression pass on restaurants
+      unaffected. Added 3 more regression tests (59 total now, all
+      passing) — `npm test` unaffected by the systemPrompt.js change
+      (pure prompt text, no matcher logic touched there)
 
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
