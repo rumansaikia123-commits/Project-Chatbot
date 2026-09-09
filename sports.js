@@ -160,6 +160,80 @@ const sportsFacilities = [
   { name: 'Assam Archery Club', area: 'Bhetapara',
     activities: ['archery'], indoorOutdoor: 'Outdoor', operator: 'Private / Association', rooftop: false, rating: 4.3, reviewCount: 61,
     highlight: 'An archery club and training venue in Bhetapara.' },
+
+  // ----- Swimming, added 2026-09-09: hotel pools inside Guwahati (not
+  // outskirt resorts), activity centres, and public pools/training
+  // clubs, researched per direct request. Hotel ratings are copied from
+  // the matching real hotel already in accommodations.js's `hotels`
+  // array — same real place, same rating everywhere, this app's
+  // standing rule (see e.g. Kiranshree Sweets/Ahija Self Drive). These
+  // sports.js entries are independent of those accommodations.js
+  // entries, same pattern as Terra Mayaa existing in two files. Real,
+  // sourced confirmation exists that all 9 hotels below allow paid
+  // non-guest pool access (a Guwahati pool-party venue guide) — the
+  // highlight text is deliberately kept to the simple "paid access for
+  // non-guests" phrasing rather than detailing the pool-party/event-
+  // package structure, per direct instruction. No pricing is included
+  // anywhere, matching this app's standing no-live-pricing rule.
+  { name: 'Novotel Guwahati GS Road', area: 'GS Road, Dispur/Downtown',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: true, rating: 4.6, reviewCount: null,
+    highlight: 'A rooftop infinity pool. Paid access for non-guests available — contact the hotel to confirm current options.' },
+  { name: 'Vivanta Guwahati', area: 'Khanapara',
+    activities: ['swimming'], indoorOutdoor: 'Both', operator: 'Hotel', rooftop: false, rating: 4.4, reviewCount: null,
+    highlight: 'Both an indoor and an outdoor pool. Paid access for non-guests available — contact the hotel to confirm current options.' },
+  { name: 'Radisson Blu Hotel, Guwahati', area: 'NH-37, Tetelia / Gotanagar (Airport)',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: false, rating: 4.6, reviewCount: null,
+    highlight: "An outdoor pool plus a dedicated children's pool. Paid access for non-guests available — contact the hotel to confirm current options." },
+  { name: 'Ratnamouli Palace', area: 'Beltola Chariali',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: true, rating: 4.6, reviewCount: null,
+    highlight: 'A rooftop pool with a garden setting. Paid access for non-guests available — contact the hotel to confirm current options.' },
+  { name: 'Arista by Ambition', area: 'GS Road, Christian Basti',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: false, rating: 4.6, reviewCount: null,
+    highlight: 'An outdoor pool. Paid access for non-guests available — contact the hotel to confirm current options.' },
+  { name: 'Kiranshree Grand', area: 'New Airport Road, Mirzapur/Ganakpara (Airport)',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: false, rating: 4.4, reviewCount: null,
+    highlight: "An outdoor pool plus a children's pool. Paid access for non-guests available — contact the hotel to confirm current options." },
+  { name: 'The Greenwood', area: 'Beltola Tiniali, Beltola-Basistha-Khanapara Road',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: false, rating: 4.4, reviewCount: null,
+    highlight: 'A boutique resort-style pool area. Paid access for non-guests available — contact the hotel to confirm current options.' },
+  { name: 'Vishwaratna Hotel', area: 'AT Road / central Guwahati',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: false, rating: 4.0, reviewCount: null,
+    highlight: 'An outdoor pool. Paid access for non-guests available — contact the hotel to confirm current options.' },
+  { name: 'Hotel Palacio', area: 'Khanapara',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Hotel', rooftop: false, rating: 4.1, reviewCount: null,
+    highlight: 'A pool open 7 AM-6 PM. Paid access for non-guests available — contact the hotel to confirm current options.' },
+
+  // Possibly the same broader R.G. Baruah Sports Complex area as the
+  // existing Nehru Stadium entry above (this project has hit a real
+  // duplicate at this exact location before — see the comment at the
+  // top of spectatorVenues). Kept as its own entry: real, distinct
+  // operational details were found (a specific 50×21m pool, seasonal
+  // April-November operation, separate men's/women's facilities, real
+  // membership fee tiers) suggesting a genuinely separate facility, not
+  // Nehru Stadium's pool under another name — but this wasn't 100%
+  // confirmable from directory listings alone. Revisit if solid
+  // evidence later shows this is actually the same facility.
+  { name: 'Bimala Prasad Chaliha Swimming Pool', area: 'Sarania Hills',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Government', rooftop: false, rating: null, reviewCount: null,
+    highlight: "A government-run seasonal pool (April-November) with separate facilities for men and women and professional coaching available." },
+  { name: 'IOC Swimming Pool', area: 'Bamunimaidan',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Indian Oil Corporation', rooftop: false, rating: null, reviewCount: null,
+    highlight: 'A company-run pool operated by Indian Oil Corporation, open to the public.' },
+  { name: 'Nabin Mahanta Memorial Swimming Arena', area: 'Sarusajai',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Government', rooftop: false, rating: null, reviewCount: null,
+    highlight: 'A public pool for children and adults, at reasonable cost.' },
+  { name: 'Guwahati Club', area: 'Uzan Bazar',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Private / Club', rooftop: false, rating: null, reviewCount: null,
+    highlight: 'A membership-based club offering swimming coaching for beginners and experienced swimmers.' },
+  { name: 'Dispur Swimming Pool', area: 'Dispur',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Government', rooftop: false, rating: null, reviewCount: null,
+    highlight: 'A public pool offering lessons for beginners, children, and advanced swimmers.' },
+  { name: 'Dolphin Swimming & Training Centre', area: 'Japorigog',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Private', rooftop: false, rating: null, reviewCount: null,
+    highlight: 'A training-focused swim centre, well-suited for children and beginners.' },
+  { name: 'Marlin Aquatics', area: 'Milan Nagar',
+    activities: ['swimming'], indoorOutdoor: 'Outdoor', operator: 'Private', rooftop: false, rating: 4.3, reviewCount: null,
+    highlight: 'A premiere swim academy focused on structured beginner coaching using modern training techniques.' },
 ];
 
 const gamingVenues = [
@@ -193,7 +267,11 @@ const ACTIVITY_KEYWORDS = [
   { pattern: /\bbasketball\b/, activity: 'basketball' },
   { pattern: /\btable[\s-]?tennis\b/, activity: 'table-tennis' },
   { pattern: /(?<!table[\s-])\btennis\b/, activity: 'tennis' },
-  { pattern: /\bswimming\b|\baquatic\b|\bpool\b(?=.*(swim|lap))/, activity: 'swimming' },
+  // "swims?" added (2026-09-09): "where can I swim" / "where can I go
+  // for a swim" didn't contain the literal word "swimming" that this
+  // pattern required — same word-form gap this project has hit
+  // repeatedly elsewhere (cafe/cafes, samosa, etc.).
+  { pattern: /\bswims?\b|\bswimming\b|\baquatic\b|\bpool\b(?=.*(swim|lap))/, activity: 'swimming' },
   { pattern: /\bhockey\b/, activity: 'hockey' },
   { pattern: /\bsquash\b/, activity: 'squash' },
   { pattern: /\bpickleball\b/, activity: 'pickleball' },
@@ -249,6 +327,23 @@ const FACILITY_NAME_KEYWORDS = [
   { pattern: /warisa\s?estate|jr\s?karting/, name: 'Warisa Estate, JR Karting' },
   { pattern: /lapx/, name: 'LAPX Go-Karting' },
   { pattern: /assam\s?archery/, name: 'Assam Archery Club' },
+  // Swimming venues, added 2026-09-09.
+  { pattern: /novotel/, name: 'Novotel Guwahati GS Road' },
+  { pattern: /vivanta/, name: 'Vivanta Guwahati' },
+  { pattern: /radisson/, name: 'Radisson Blu Hotel, Guwahati' },
+  { pattern: /ratnamouli/, name: 'Ratnamouli Palace' },
+  { pattern: /arista/, name: 'Arista by Ambition' },
+  { pattern: /kiranshree\s?grand/, name: 'Kiranshree Grand' },
+  { pattern: /greenwood/, name: 'The Greenwood' },
+  { pattern: /vishwaratna/, name: 'Vishwaratna Hotel' },
+  { pattern: /hotel\s?palacio/, name: 'Hotel Palacio' },
+  { pattern: /bimala\s?prasad\s?chaliha/, name: 'Bimala Prasad Chaliha Swimming Pool' },
+  { pattern: /\bioc\s?swimming/, name: 'IOC Swimming Pool' },
+  { pattern: /nabin\s?mahanta/, name: 'Nabin Mahanta Memorial Swimming Arena' },
+  { pattern: /guwahati\s?club/, name: 'Guwahati Club' },
+  { pattern: /dispur\s?swimming/, name: 'Dispur Swimming Pool' },
+  { pattern: /dolphin\s?swimming/, name: 'Dolphin Swimming & Training Centre' },
+  { pattern: /marlin\s?aquatics/, name: 'Marlin Aquatics' },
 ];
 
 const GAMING_NAME_KEYWORDS = [
@@ -272,7 +367,15 @@ const AREA_KEYWORDS = [
   { pattern: /borbari/, area: 'Borbari' },
   { pattern: /chatribari/, area: 'Chatribari' },
   { pattern: /rukmini\s?gaon/, area: 'Rukmini Gaon' },
-  { pattern: /beltola/, area: 'Beltola Tiniali' },
+  // Shortened from 'Beltola Tiniali' (2026-09-09): that canonical name
+  // is too specific — a bare "Beltola" search only found entries whose
+  // area string literally contained "Beltola Tiniali", silently missing
+  // Ratnamouli Palace (real area: "Beltola Chariali", a different
+  // sub-locality). Same bug shape already fixed once in restaurants.js
+  // for ABC/Bhangagarh. Pure widening — "Beltola" is still a substring
+  // of every existing Beltola-area entry, so nothing already matching
+  // (e.g. Arena 28) stops matching.
+  { pattern: /beltola/, area: 'Beltola' },
   { pattern: /rehabari/, area: 'Rehabari' },
   { pattern: /basistha\b(?!pur)/, area: 'Basistha' },
   { pattern: /ulubari/, area: 'Ulubari' },
@@ -285,6 +388,15 @@ const AREA_KEYWORDS = [
   { pattern: /bhetapara/, area: 'Bhetapara' },
   { pattern: /sonaighuli|lokhra/, area: 'Sonaighuli / Lokhra' },
   { pattern: /christian\s?basti|gs\s?road|city\s?cent(re|er)\s?mall/, area: 'Christian Basti / GS Road' },
+  // Added 2026-09-09 for the new hotel/public-pool swimming entries.
+  { pattern: /khanapara/, area: 'Khanapara' },
+  { pattern: /\bairport\b|tetelia|gotanagar|ganakpara/, area: 'Airport' },
+  { pattern: /\bat\s?road\b/, area: 'AT Road' },
+  { pattern: /bamunimaidan/, area: 'Bamunimaidan' },
+  { pattern: /sarania\s?hills|gandhi\s?basti/, area: 'Sarania Hills' },
+  { pattern: /milan\s?nagar/, area: 'Milan Nagar' },
+  { pattern: /uzan\s?bazar|mg\s?road/, area: 'Uzan Bazar' },
+  { pattern: /japorigog/, area: 'Japorigog' },
 ];
 
 // The watch/match gap allows for a sport name in between ("watch A

@@ -38,8 +38,8 @@ const { getRelevantTemples } = require('./temples');
 const { getRelevantCinemas } = require('./cinemas');
 const { getRelevantShops } = require('./shops');
 const { getRelevantAttractions } = require('./attractions');
-const { getRelevantHotels, getRelevantResorts, getRelevantHomestays } = require('./accommodations');
-const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues } = require('./sports');
+const { getRelevantHotels, getRelevantResorts, getRelevantHomestays, hotels } = require('./accommodations');
+const { getRelevantSpectatorVenues, getRelevantSportsFacilities, getRelevantGamingVenues, sportsFacilities } = require('./sports');
 const { getRelevantHospitals } = require('./hospitals');
 const { getRelevantSweetShops, sweetShops } = require('./sweets');
 const {
@@ -272,4 +272,55 @@ test('DATA SYNC: Kiranshree Sweets has the same rating in both restaurants.js an
   const asRestaurant = restaurants.find((r) => r.name === 'Kiranshree Sweets');
   const asSweetShop = sweetShops.find((s) => s.name === 'Kiranshree Sweets');
   assert.equal(asRestaurant.rating, asSweetShop.rating);
+});
+
+// ----- Swimming venues (2026-09-09): real bugs found and fixed while
+// researching where to swim in Guwahati. -----
+
+test('REGRESSION (bare "swim" bug): "where can I swim" is no longer empty', () => {
+  assert.ok(getRelevantSportsFacilities('where can I swim').length > 0);
+  assert.ok(getRelevantSportsFacilities('where can I go for a swim').length > 0);
+});
+
+test('REGRESSION (Beltola area fix): a bare "Beltola" search still finds the pre-existing Arena 28 entry', () => {
+  const matches = getRelevantSportsFacilities('football turf in Beltola').map((f) => f.name);
+  assert.deepEqual(matches, ['Arena 28']);
+});
+
+test('swimming venues: named lookups narrow correctly', () => {
+  assert.deepEqual(getRelevantSportsFacilities('Marlin Aquatics').map((f) => f.name), ['Marlin Aquatics']);
+  assert.deepEqual(getRelevantSportsFacilities('Radisson Blu').map((f) => f.name), ['Radisson Blu Hotel, Guwahati']);
+});
+
+test('swimming venues: area search finds every entry listing that locality, including compound areas', () => {
+  const khanapara = getRelevantSportsFacilities('swimming in Khanapara').map((f) => f.name).sort();
+  assert.deepEqual(khanapara, ['Hotel Palacio', 'The Greenwood', 'Vivanta Guwahati'].sort());
+  const beltola = getRelevantSportsFacilities('swimming in Beltola').map((f) => f.name).sort();
+  assert.deepEqual(beltola, ['Ratnamouli Palace', 'The Greenwood'].sort());
+});
+
+test('DATA SYNC: each new hotel swimming entry has the same rating as its real accommodations.js hotel listing', () => {
+  const pairs = [
+    'Novotel Guwahati GS Road',
+    'Vivanta Guwahati',
+    'Ratnamouli Palace',
+    'Arista by Ambition',
+    'Kiranshree Grand',
+    'The Greenwood',
+    'Vishwaratna Hotel',
+    'Hotel Palacio',
+  ];
+  for (const name of pairs) {
+    const asHotel = hotels.find((h) => h.name === name);
+    const asFacility = sportsFacilities.find((f) => f.name === name);
+    assert.ok(asHotel, `${name} should exist in accommodations.js hotels`);
+    assert.ok(asFacility, `${name} should exist in sports.js sportsFacilities`);
+    assert.equal(asHotel.rating, asFacility.rating, `${name} rating should match between the two files`);
+  }
+  // Radisson Blu is named slightly differently between the two files
+  // ("Radisson Blu Hotel, Guwahati" vs "Radisson Blu Hotel"-style
+  // entries elsewhere) — checked separately by exact real names.
+  const radissonHotel = hotels.find((h) => h.name === 'Radisson Blu Hotel, Guwahati');
+  const radissonFacility = sportsFacilities.find((f) => f.name === 'Radisson Blu Hotel, Guwahati');
+  assert.equal(radissonHotel.rating, radissonFacility.rating);
 });

@@ -3008,6 +3008,154 @@ nightlife venues stay as plain text for now.
       session is
       still intact
 
+## Weather via real function calling — first tool-use feature in this app (2026-09-08)
+- [x] Real gap found through conversation, then confirmed by reading
+      `weather.js`: "should I carry an umbrella?" contains none of
+      `WEATHER_TRIGGER`'s words, so it's never recognized as a weather
+      question today, same shape as the earlier samosa bug
+- [x] Discussed the two upgrade paths (RAG for CURATED_INFO vs. function
+      calling for weather) at length before choosing; researched whether
+      the SDK/API even supports combining `responseSchema` (used by
+      every category today) with `tools` in one request — confirmed via
+      Google's official docs (Preview, "Gemini 3 series models") and by
+      reading the actual installed `@google/genai` v2.19.0 type
+      definitions directly (`Tool`, `FunctionDeclaration`,
+      `response.functionCalls`, `FunctionResponse`) before committing to
+      a design
+- [x] Design reviewed before implementation (plan mode): scoped so the
+      other ~20 category files and matcher functions are provably
+      unaffected — only `weather.js`, `server.js`, and `systemPrompt.js`
+      change; `CHAT_RESPONSE_SCHEMA` itself untouched
+- [x] **Early smoke test (go/no-go on the one real unverified risk)**:
+      throwaway script (`_smoketest_weather_tool.js`, deleted right
+      after running — never part of the app) confirmed live against the
+      real API: `gemini-3.5-flash-lite` correctly requested the
+      `get_current_weather` tool for "Should I carry an umbrella today?"
+      (proving the exact gap this was built to close actually gets
+      recognized), and the follow-up call with a fake result returned
+      valid JSON matching the test schema, correctly incorporating the
+      fake weather data into a natural reply. GO — combining `tools` and
+      `responseSchema` genuinely works on this exact model
+- [x] `weather.js`: removed `WEATHER_TRIGGER`/`getRelevantWeather()`;
+      extracted the real fetch logic into `fetchLiveWeather()` (same
+      retry/error handling, same result shape, no keyword check)
+- [x] `server.js`: added `WEATHER_TOOL` declaration (description covers
+      indirect phrasing like "carry an umbrella," closing the real gap);
+      removed the old pre-fetch call; added `tools` to the Gemini
+      config; added the function-call round trip (detect
+      `response.functionCalls`, run the real fetch, make a second call
+      with the result) — only when Gemini actually asks for it
+- [x] `systemPrompt.js`: removed `relevantWeather` param + old
+      conditional paragraph; added a short, always-present paragraph
+      describing the tool and preserving the same honesty rules
+      (state values exactly, honest about a failed fetch, never invent)
+- [x] Verified live: umbrella question got a real, correct live-data
+      answer ("...you will definitely want to carry an umbrella"); a
+      non-weather question (temples) returned 6 real matches, unaffected,
+      one Gemini call as before. Debugged a genuine first-attempt live
+      failure (see below) with a throwaway script mirroring server.js's
+      exact logic + the real `CHAT_RESPONSE_SCHEMA` — confirmed the
+      mechanism itself (tool declaration, round trip, real
+      `fetchLiveWeather()`) is fully correct
+- [x] **Found a real reliability concern, reported honestly rather than
+      called "done"**: 6 identical live "what's the weather right now"
+      requests → 4/6 correct, 2/6 wrongly gave the generic off-topic
+      decline for a clearly on-topic question. Root-caused to
+      `gemini-3.5-flash-lite` occasionally not requesting the
+      `get_current_weather` tool at all on the first call — confirmed via
+      a direct debug script that the round-trip code and the real
+      weather fetch are both 100% correct when the tool IS requested;
+      this is the model's own Preview-feature inconsistency, not a code
+      bug. Worse odds and a worse failure mode (wrongful decline, not
+      just a missing card) than this project's usual documented model
+      randomness — flagged to the user as a real decision point rather
+      than silently accepted or silently patched
+- [x] Regression: `npm test` (47/47) plus live checks on temples,
+      sweets/samosa — all unaffected, confirming isolation
+- [x] **Given the ~67% real-world reliability finding, the user chose to
+      revert rather than ship or patch**: `weather.js`, `server.js`, and
+      `systemPrompt.js` restored via `git checkout` to their last
+      committed state (safe — none of the function-calling work had been
+      committed yet, so this cleanly undid exactly this attempt and
+      nothing else, keeping everything from earlier the same session —
+      the 22 specialty restaurants, the samosa fix — fully intact).
+      Verified: syntax-checks pass, `npm test` 47/47, and a live weather
+      question against the restored keyword-trigger version answered
+      correctly and reliably (single call, no tool-calling randomness).
+      This entire attempt's write-up above is kept as a real record —
+      not deleted — since the technical groundwork (the SDK research,
+      the confirmed mechanism, the exact 4/6-vs-2/6 reliability
+      measurement) is genuine, reusable learning if function calling
+      gets revisited later, once this specific Preview limitation on
+      `gemini-3.5-flash-lite` has had time to mature
+
+## Added swimming venues to sports.js: hotels, activity centres, public pools/clubs (2026-09-09)
+- [x] User asked for real research (hotels/resorts inside Guwahati only —
+      not outskirts — plus activity centres like Arizona, plus public
+      swim clubs/training institutes) before touching any code
+- [x] Checked existing data first: Arizona Sports Arena and Dr. Zakir
+      Hussain Aquatic Complex already exist and already work for
+      "swimming" — confirmed rather than duplicated
+- [x] Multi-round web research with the user checking in at each stage:
+      confirmed pools at 9 in-city hotels (cross-referencing against
+      existing `accommodations.js` entries), found real non-guest access
+      confirmation via a Guwahati pool-party venue guide (paid, but
+      structured as event packages — simplified in the data per the
+      user's choice), found 7 new public pools/training centres/clubs,
+      explicitly excluded Mayfair Spring Valley Resort (outskirts),
+      IIT Guwahati/NFR Officers Club (not open to the public), and
+      Kharghuli Resort (named in only one source, could not be
+      independently corroborated by a second — dropped per user
+      decision rather than risk unverified data)
+- [x] Found and flagged a real potential duplicate before adding it
+      blind: Bimala Prasad Chaliha Swimming Pool sits at the same R.G.
+      Baruah Sports Complex area as the existing Nehru Stadium entry —
+      this project has hit this exact duplicate class before at this
+      same location (see the standing code comment above
+      `spectatorVenues`). Real, distinct operational details (specific
+      pool dimensions, season, separate men's/women's facilities, real
+      fee tiers) supported treating it as genuinely separate — included
+      with an internal (non-visitor-facing) comment flagging the
+      residual uncertainty for future revisit
+- [x] Design reviewed before implementation (plan mode): confirmed this
+      belongs in `sports.js`'s existing `sportsFacilities` shape, not a
+      restructured `accommodations.js` — reuses 100% of existing
+      matching/schema/card infrastructure, zero new code outside this
+      one file
+- [x] Found 2 real, unrelated bugs while researching, both fixed as part
+      of this same change (matching this project's practice of fixing
+      the whole bug class when found, not just the reported case):
+      `ACTIVITY_KEYWORDS`'s swimming pattern required the literal word
+      "swimming" and missed bare "swim"/"swims" (the user's own example
+      phrasing!); `AREA_KEYWORDS`'s `/beltola/` row's canonical output
+      was too specific ("Beltola Tiniali"), which would have silently
+      hidden Ratnamouli Palace (real area: "Beltola Chariali") from a
+      bare "Beltola" search — the exact same bug shape already fixed
+      once in `restaurants.js` for ABC/Bhangagarh
+- [x] `sports.js`: applied both regex/area fixes; added 8 new
+      `AREA_KEYWORDS` rows; added 9 hotel entries + 7 public/training
+      entries to `sportsFacilities` (16 new entries total, 33 total now),
+      each with real sourced details and `FACILITY_NAME_KEYWORDS` rows
+      for individual name lookup; hotel ratings copied from the existing
+      `accommodations.js` entry for the same real place, per the
+      "same place, same rating everywhere" rule
+- [x] Added 5 regression tests to `test.js` (52 total now): the bare
+      "swim" fix, the Beltola area fix (with an explicit check that the
+      pre-existing Arena 28 entry still matches, no regression), named
+      lookups, compound-area lookups (Khanapara, Beltola), and a
+      DATA SYNC check that every new hotel entry's rating matches its
+      real `accommodations.js` listing
+- [x] Verified live against a fresh server: "where can I swim in
+      Guwahati" and "where can I go for a swim" (the exact phrasing that
+      was broken before) both return all 17 real swimming venues,
+      organized clearly in the reply (hotel pools / public pools /
+      training centres) with zero pricing stated anywhere; regression
+      pass on `npm test` (52/52) and an unrelated restaurant question —
+      both unaffected
+- [x] No other files touched — `server.js`/`systemPrompt.js`/
+      `public/script.js`/`CHAT_RESPONSE_SCHEMA` all unaffected, confirmed
+      via `git status` and the regression pass, not just assumed
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 
