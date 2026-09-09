@@ -3156,6 +3156,35 @@ nightlife venues stay as plain text for now.
       `public/script.js`/`CHAT_RESPONSE_SCHEMA` all unaffected, confirmed
       via `git status` and the regression pass, not just assumed
 
+## Quick fix: GS Road/Christian Basti area gap in the new swimming venues (2026-09-09)
+- [x] User reported live (on the deployed site) that both "swimming in
+      GS road" and "swimming in Guwahati" got the off-topic decline.
+      Tested both locally against the just-pushed code first, rather
+      than assuming: "swimming in Guwahati" already worked correctly —
+      strong evidence Render simply hadn't redeployed yet since the last
+      push. "swimming in GS road" was a genuinely new, real bug
+- [x] Root cause: the exact same area-matching shape as the Beltola fix
+      from the same session — `AREA_KEYWORDS`'s merged
+      `/christian\s?basti|gs\s?road|.../ → 'Christian Basti / GS Road'`
+      row only matched entries whose area contained that full compound
+      string, but the new hotel entries genuinely say "GS Road,
+      Dispur/Downtown" or "GS Road, Christian Basti" — different word
+      order, no "/" — so a bare "GS Road" search found nothing for them
+- [x] Fixed by splitting into two rows (`'Christian Basti'` and `'GS
+      Road'` separately) — same pattern as the Beltola fix; verified the
+      pre-existing Timezone – City Center Mall gaming entry still
+      matches both via regression test, no breakage
+- [x] Proactively checked EVERY other new entry's area fragments for the
+      same class of bug (not just the one reported) via a small script
+      testing each fragment against its own entry — found zero other
+      hidden misses, so this was an isolated case, not a systemic gap
+- [x] Added 2 regression tests (54 total now). Verified live against a
+      fresh server: both exact reported queries now return correct real
+      data (2 hotels for "GS Road", all 17 for "Guwahati")
+- [ ] Told the user to click Manual Deploy on Render, since the earlier
+      swimming-venues push likely hadn't gone live yet — this fix should
+      be included in that same deploy
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

@@ -387,7 +387,19 @@ const AREA_KEYWORDS = [
   { pattern: /adabari/, area: 'Adabari' },
   { pattern: /bhetapara/, area: 'Bhetapara' },
   { pattern: /sonaighuli|lokhra/, area: 'Sonaighuli / Lokhra' },
-  { pattern: /christian\s?basti|gs\s?road|city\s?cent(re|er)\s?mall/, area: 'Christian Basti / GS Road' },
+  // Split into two rows (2026-09-09): same bug shape as the Beltola fix
+  // above, found live right after deploying the swimming venues — the
+  // merged canonical 'Christian Basti / GS Road' only matched entries
+  // whose area contained that exact compound string, but the new
+  // swimming entries genuinely say just "GS Road, Dispur/Downtown" or
+  // "GS Road, Christian Basti" (different word order, no "/"), so a
+  // bare "GS Road" search returned nothing for them. Existing entries
+  // (e.g. Timezone – City Center Mall, area "Christian Basti / GS
+  // Road") still match both rows below, since their area string
+  // contains both "GS Road" and "Christian Basti" as substrings either
+  // way — pure widening, no regression.
+  { pattern: /christian\s?basti/, area: 'Christian Basti' },
+  { pattern: /gs\s?road|city\s?cent(re|er)\s?mall/, area: 'GS Road' },
   // Added 2026-09-09 for the new hotel/public-pool swimming entries.
   { pattern: /khanapara/, area: 'Khanapara' },
   { pattern: /\bairport\b|tetelia|gotanagar|ganakpara/, area: 'Airport' },

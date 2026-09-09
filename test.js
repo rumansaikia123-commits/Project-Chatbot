@@ -324,3 +324,12 @@ test('DATA SYNC: each new hotel swimming entry has the same rating as its real a
   const radissonFacility = sportsFacilities.find((f) => f.name === 'Radisson Blu Hotel, Guwahati');
   assert.equal(radissonHotel.rating, radissonFacility.rating);
 });
+
+test('REGRESSION (GS Road area fix): found live right after deploying — "swimming in GS Road" was empty', () => {
+  const matches = getRelevantSportsFacilities('Where can I go swimming in GS road?').map((f) => f.name).sort();
+  assert.deepEqual(matches, ['Arista by Ambition', 'Novotel Guwahati GS Road'].sort());
+});
+test('REGRESSION (GS Road area fix): Christian Basti narrows correctly, and the pre-existing Timezone gaming venue still matches both', () => {
+  assert.deepEqual(getRelevantSportsFacilities('swimming in Christian Basti').map((f) => f.name), ['Arista by Ambition']);
+  assert.deepEqual(getRelevantGamingVenues('arcade in city center mall').map((g) => g.name), ['Timezone – City Center Mall']);
+});
