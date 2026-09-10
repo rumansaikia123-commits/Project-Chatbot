@@ -230,9 +230,6 @@ const restaurants = [
   { name: 'The HideOut Café', area: 'Borbari (VIP Road)', cuisines: ['Cafe', 'Tibetan'],
     costForTwo: 300, rating: 4.1,
     highlight: 'Garden-themed cafe, fresh multi-cuisine breakfast and momos.' },
-  { name: 'Cafe Maya', area: 'Christian Basti', cuisines: ['Cafe', 'Asian', 'Mughlai'],
-    costForTwo: 600, rating: 4.9,
-    highlight: 'Casual dining mix of Chinese, Asian, and Mughlai finger foods.' },
   { name: 'The Atrangi House', area: 'Dighalipukhuri', cuisines: ['Cafe', 'Bakery', 'Continental'],
     costForTwo: 300, rating: 4.7,
     highlight: 'Fusion bakery, continental food, and quirky aesthetic design.' },
@@ -526,7 +523,14 @@ function getRelevantRestaurants(message) {
   // proper sit-down meal just as much as someone who says "restaurant",
   // and both should get the same shop-like-cuisine handling below (unlike
   // "breakfast", which genuinely fits a cafe stop as its default meaning).
-  const wantsProperMeal = /\brestaurants?\b|\blunch\b|\bdinner\b/.test(text);
+  // Misspellings added 2026-09-09: this is a SEPARATE regex from
+  // FOOD_TRIGGER above, and got missed when FOOD_TRIGGER was fixed for
+  // "restaurents"/"resturant" earlier the same day — a real bug this
+  // caused: "restaurents in Guwahati" was recognized as a food question
+  // (FOOD_TRIGGER), but not as "wants a proper meal" (this regex still
+  // only knew the correct spelling), so the cafe-exclusion filter below
+  // never fired and cafes leaked into a plain restaurant request.
+  const wantsProperMeal = /\brestaurants?\b|\brestaurents?\b|\bresturants?\b|\blunch\b|\bdinner\b/.test(text);
 
   const SHOP_LIKE_CUISINES = new Set(['Cafe', 'Mithai', 'Bakery', 'Street Food']);
   const mentionedShopLikeCuisine = [...matchedCuisines].some((c) => SHOP_LIKE_CUISINES.has(c));
@@ -588,8 +592,16 @@ function getRelevantRestaurants(message) {
   // shop with a couple of Chinese-inspired items isn't the same as an
   // actual Chinese restaurant), so that tag was removed from both
   // entries' data directly — they're now excluded from a "Chinese" match
-  // entirely, upstream of this ranking step, not just demoted by it. The
-  // demotion logic below still stands and still matters for other cafes
+  // entirely, upstream of this ranking step, not just demoted by it.
+  // Cafe Maya was later removed from this file entirely (2026-09-09, per
+  // direct request), after also being the trigger for a related bug: a
+  // separate `wantsProperMeal` regex (used to exclude cafe-only entries
+  // from a plain "restaurant"/"lunch"/"dinner" request, a few lines
+  // below) hadn't been updated alongside FOOD_TRIGGER's misspelling
+  // fixes earlier the same day, so cafes were leaking into a
+  // misspelled "restaurents" request — fixed at the same time as the
+  // removal. The demotion logic below still stands and still matters
+  // for other cafes
   // with a genuinely-tagged real cuisine (e.g. Lush - The Café, Cafe
   // Aera, 11th Avenue Cafe Bistro all carry Continental/Italian/Asian
   // tags and should still rank below a real restaurant for those

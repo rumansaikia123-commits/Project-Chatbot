@@ -3294,6 +3294,45 @@ nightlife venues stay as plain text for now.
       returns real restaurant data; regression pass on temples confirmed
       unaffected
 
+## Fix: cafes still leaking into misspelled restaurant requests (2026-09-09), and remove Cafe Maya entirely
+
+- [x] User reported the previous "restaurents" fix now returns real data,
+      but cafes (Cafe Maya, Pause.) are mixed into plain restaurant
+      results — something the cafe-exclusion filter should prevent
+- [x] Diagnosed precisely: `restaurants.js` has TWO separate regexes —
+      `FOOD_TRIGGER` (broad "is this a food question" check, already
+      fixed for misspellings the same day) and `wantsProperMeal` (a
+      narrower "does this specifically want a sit-down meal" check that
+      gates the cafe-exclusion filter). Only `FOOD_TRIGGER` was fixed;
+      `wantsProperMeal` still only recognized the correctly-spelled
+      "restaurant", so the cafe-exclusion logic never fired for
+      "restaurents"-style queries — a real sibling-pattern miss, exactly
+      the "check sibling tables before calling a fix done" lesson this
+      project has repeatedly needed, this time missed once
+- [x] Fixed `wantsProperMeal` to also recognize `restaurents?`/
+      `resturants?`, with a code comment explaining why this is a
+      separate regex from `FOOD_TRIGGER` and why it was missed
+- [x] Separately, per direct request: removed the "Cafe Maya" entry from
+      `restaurants.js` entirely (it no longer exists anywhere in the
+      data). Updated the historical code comment nearby (which explained
+      a past bug fix by name-referencing Cafe Maya) so it no longer
+      confusingly points at a deleted entry, while keeping the
+      still-relevant explanation (the demotion logic still applies to
+      other cafes; Kiranshree Sweets is still real and current)
+- [x] Verified via `node -e`: `getRelevantRestaurants('restaurents in
+      Guwahati?')` now excludes both Cafe Maya and Pause., matching the
+      correctly-spelled version exactly
+- [x] Added 2 regression tests (64 total now, all passing): the
+      `wantsProperMeal` sibling fix (misspelled query excludes cafes,
+      matches the correctly-spelled result exactly) and a direct check
+      that no "Cafe Maya" entry exists anywhere in the data
+- [x] `node --check restaurants.js` passed; `npm test` passed 64/64
+- [x] Live-verified against a fresh server with the user's exact
+      message ("restaurents in Guwahati?"): 10 real restaurants
+      returned, no Cafe Maya, no Pause., and the model correctly asked
+      the cuisine-narrowing clarifying question since the request was
+      genuinely broad
+
 ## Housekeeping
 - [ ] Fix Render auto-deploy so future pushes go live without a manual click
 

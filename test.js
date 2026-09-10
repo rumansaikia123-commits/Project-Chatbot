@@ -389,3 +389,25 @@ test('REGRESSION (biriyani spelling): the common alternate spelling "biriyani" f
   assert.deepEqual(biriyani, biryani);
   assert.ok(biriyani.length > 0);
 });
+
+// ----- Sibling-regex miss (2026-09-09): fixing FOOD_TRIGGER's misspellings
+// above did NOT also fix `wantsProperMeal`, a separate regex a few lines
+// below it that decides whether to exclude cafe-only entries from a plain
+// "restaurant"/"lunch"/"dinner" request. Because that regex still only knew
+// the correct spelling, "restaurents in Guwahati" was recognized as a food
+// question but NOT as "wants a proper meal", so cafes (Cafe Maya, Pause.)
+// leaked into the results. Cafe Maya was also removed from the data
+// entirely around the same time (direct request), so this checks both. -----
+
+test('REGRESSION (wantsProperMeal sibling fix): a misspelled "restaurents" request excludes cafe-only entries, same as the correctly-spelled version', () => {
+  const misspelled = getRelevantRestaurants('restaurents in Guwahati?').map((r) => r.name);
+  const correct = getRelevantRestaurants('restaurants in Guwahati?').map((r) => r.name);
+  assert.ok(!misspelled.includes('Cafe Maya'));
+  assert.ok(!misspelled.includes('Pause.'));
+  assert.deepEqual(misspelled.sort(), correct.sort());
+});
+
+test('REGRESSION (Cafe Maya removed): no entry named "Cafe Maya" exists anywhere in restaurants data', () => {
+  const all = getRelevantRestaurants('restaurants').concat(getRelevantRestaurants('cafes in Guwahati'));
+  assert.ok(!all.some((r) => r.name === 'Cafe Maya'));
+});
